@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from shapely import validity
+from shapely import validation
 
 def isvalid(obj):
-    return validity.explain_validity(obj)
+    return validation.explain_validity(obj)
