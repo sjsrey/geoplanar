@@ -6,7 +6,14 @@ from shapely.geometry import box
 
 
 def holes(gdf):
-    """Find holes in a geodataframe"""
+    """Find holes in a geodataframe.
+
+    A hole is also known as a sliver which contains a set of points that
+
+    - are not contained by any of the geometries in the geoseries
+    - are contained in the convex hull of the unary_union of the geoseries
+
+    """
 
 
     # get box
