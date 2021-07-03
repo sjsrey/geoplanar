@@ -2,8 +2,8 @@
 import libpysal
 import geopandas
 from collections import defaultdict
-from shapely.geometry import box, LineString, Polygon
-from shapely.ops import split
+from shapely.geometry import box, LineString, Polygon, Point
+from shapely.ops import split, linemerge
 
 
 def non_planar_edges(gdf):
@@ -38,10 +38,25 @@ def is_planar_enforced(gdf):
         return False
     return True
 
-def fix_npe_edges(gdf):
-    "Fix all npe intersecting edges in geoseries"
+def fix_npe_edges(gdf, inplace=False):
+    """Fix all npe intersecting edges in geoseries.
+
+    Arguments
+    ---------
+
+    gdf: GeoDataFrame with polygon geoseries for geometry
+
+
+    Returns
+    -------
+    gdf: GeoDataFrame with geometries respected planar edges.
+
+    """
+
+    if not inplace:
+        gdf = gdf.copy()
+
     edges = non_planar_edges(gdf)
-    print(edges)
     for key in edges:
         poly_a = gdf.iloc[key].geometry
         for j in edges[key]:
@@ -55,18 +70,34 @@ def fix_npe_edges(gdf):
 def insert_intersections(poly_a, poly_b):
     """Correct two npe intersecting polygons by inserting intersection points on intersecting edges
     """
-    lin_a = LineString(list(poly_a.exterior.coords))
-    lin_b = LineString(list(poly_b.exterior.coords))
-    new_polys = []
-    pts = lin_a.intersection(lin_b)
-    for lin in [lin_a, lin_b]:
-        splits = split(lin, pts)
-        coords = [list(zip(*line.coords.xy)) for line in list(splits)]
-        new_poly = coords[0]
-        for coord in coords[1:]:
-            if coord[0] == new_poly[-1]:
-                new_poly.extend(coord[1:])
-            else:
-                new_poly.extend(coord)
-        new_polys.append(Polygon(new_poly))
-    return new_polys
+
+    pint = poly_a.intersection(poly_b)
+    if isinstance(pint, LineString): # npe edges overlap
+        new_polys = []
+        pnts = pint
+        for poly in [poly_a, poly_b]:
+            exterior = LineString(list(poly.exterior.coords))
+            sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy))]
+            for pnt in sp:
+                splits = split(exterior, pnt)
+                if len(splits) > 1:
+                    left, right = split(exterior, pnt)
+                    exterior = linemerge([left, right])
+            new_polys.append(Polygon(list(zip(*exterior.coords.xy))))
+        return new_polys
+    else:
+        lin_a = LineString(list(poly_a.exterior.coords))
+        lin_b = LineString(list(poly_b.exterior.coords))
+        new_polys = []
+        pts = lin_a.intersection(lin_b)
+        for lin in [lin_a, lin_b]:
+            splits = split(lin, pts)
+            coords = [list(zip(*line.coords.xy)) for line in list(splits)]
+            new_poly = coords[0]
+            for coord in coords[1:]:
+                if coord[0] == new_poly[-1]:
+                    new_poly.extend(coord[1:])
+                else:
+                    new_poly.extend(coord)
+            new_polys.append(Polygon(new_poly))
+        return new_polys
