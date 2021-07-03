@@ -44,3 +44,28 @@ def fill_holes(gdf):
         gdf.geometry[largest.index] = tmpdf.geometry[0]
         #print(largest.head())
     return gdf
+
+def missing_interiors(gdf):
+    contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
+    pairs = []
+    for pair in contained.T:
+        i,j = pair
+        if i != j:
+            pairs.append((i,j))
+    return pairs
+
+
+def add_interiors(gdf, inplace=False):
+
+    if not inplace:
+        gdf = gdf.copy()
+
+    contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
+    a, k = contained.shape
+    n = gdf.shape[0]
+    if k > gdf.shape[0]:
+        to_add = contained[:, contained[0] != contained[1]].T
+        for add in to_add:
+            i, j = add
+            gdf.geometry[i] = gdf.geometry[i].difference(gdf.geometry[j])
+    return gdf
