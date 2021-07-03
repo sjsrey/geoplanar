@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import numpy
 
 
 def trim_overlaps(gdf, largest=True):
