@@ -13,7 +13,7 @@ Planar enforcement for polygon geoseries
 - [missing holes](https://github.com/sjsrey/geoplanar/blob/main/notebooks/holes.ipynb)
 - [nonplanar coincident edges](https://github.com/sjsrey/geoplanar/blob/main/notebooks/nonplanaredges.ipynb)
 - [overlaps](https://github.com/sjsrey/geoplanar/blob/main/notebooks/overlaps.ipynb)
-- nonplanar touches
+- [nonplanar touches](https://github.com/sjsrey/geoplanar/blob/main/notebooks/nonplanartouches.ipynb)
 - [slivers](https://github.com/sjsrey/geoplanar/blob/main/notebooks/slivers.ipynb)
 
 
