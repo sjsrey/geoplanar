@@ -10,11 +10,11 @@ Planar enforcement for polygon geoseries
 
 ## Diagnostics for 
 
-- slivers
-- missing holes
-- [overlaps](https://github.com/sjsrey/geoplanar/blob/main/notebooks/overlaps.ipynb)
+- [missing holes](https://github.com/sjsrey/geoplanar/blob/main/notebooks/holes.ipynb)
 - [nonplanar coincident edges](https://github.com/sjsrey/geoplanar/blob/main/notebooks/nonplanaredges.ipynb)
+- [overlaps](https://github.com/sjsrey/geoplanar/blob/main/notebooks/overlaps.ipynb)
 - nonplanar touches
+- slivers
 
 
 ## Status
