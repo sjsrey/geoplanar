@@ -5,10 +5,8 @@ Planar enforcement for polygon geoseries
 ![mexico-us](https://i.imgur.com/CFgnecL.png)
 
 
-`geoplanar` supports the detection and correction of violations of [planar enforcement](https://ibis.geog.ubc.ca/courses/klink/gis.notes/ncgia/u12.html#SEC12.6) for polygon geoseries.
+`geoplanar` supports the detection and correction of violations of [planar enforcement](https://ibis.geog.ubc.ca/courses/klink/gis.notes/ncgia/u12.html#SEC12.6) for polygon geoseries including:
 
-
-## Diagnostics for 
 
 - [missing holes](https://github.com/sjsrey/geoplanar/blob/main/notebooks/holes.ipynb)
 - [nonplanar coincident edges](https://github.com/sjsrey/geoplanar/blob/main/notebooks/nonplanaredges.ipynb)
