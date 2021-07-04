@@ -37,23 +37,28 @@ def holes(gdf):
     return _holes
 
 
-def fill_holes(gdf):
+def fill_holes(gdf, largest=True, inplace=False):
+
     h = holes(gdf)
+    if not inplace:
+        gdf = gdf.copy()
+
     for index, row in h.iterrows():
-        #print(row.geometry.area)
         rdf = geopandas.GeoDataFrame(geometry=[row.geometry])
-        neighbors = geopandas.sjoin(left_df=gdf,
-                                   right_df=rdf,
-                                   how='inner',
-                                   op='intersects')
-        largest = neighbors[neighbors.area==neighbors.area.max()]
-        tmpdf = pandas.concat([largest, rdf]).dissolve()
-        gdf.geometry[largest.index] = tmpdf.geometry[0]
-        #print(largest.head())
+        neighbors = geopandas.sjoin(left_df=gdf, right_df=rdf, how='inner',
+                                    op='intersects')
+        if largest:
+            left = neighbors[neighbors.area==neighbors.area.max()]
+        else:
+            left = neighbors[neighbors.area==neighbors.area.min()]
+        tmpdf = pandas.concat([left, rdf]).dissolve()
+        gdf.geometry[left.index] = tmpdf.geometry[0]
     return gdf
 
+
 def missing_interiors(gdf):
-    contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
+    contained = gdf.geometry.sindex.query_bulk(gdf.geometry,
+                                               predicate="contains")
     pairs = []
     for pair in contained.T:
         i,j = pair
@@ -67,7 +72,8 @@ def add_interiors(gdf, inplace=False):
     if not inplace:
         gdf = gdf.copy()
 
-    contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
+    contained = gdf.geometry.sindex.query_bulk(gdf.geometry,
+                                               predicate="contains")
     a, k = contained.shape
     n = gdf.shape[0]
     if k > gdf.shape[0]:
