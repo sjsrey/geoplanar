@@ -1,3 +1,4 @@
+__version__ = "0.1.0"
 """
 GeoPlanar
 
@@ -11,3 +12,4 @@ from geoplanar.planar import (planar_enforce, is_planar_enforced,
                               fix_npe_edges, insert_intersections,
                               non_planar_edges)
 from geoplanar.valid import isvalid
+
