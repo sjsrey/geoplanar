@@ -2,7 +2,7 @@
 import numpy
 
 
-def trim_overlaps(gdf, largest=True):
+def trim_overlaps(gdf, largest=True, inplace=False):
     """Trim overlapping polygons
 
 
@@ -21,6 +21,9 @@ def trim_overlaps(gdf, largest=True):
 
     """
     intersections = gdf.sindex.query_bulk(gdf.geometry, predicate='intersects').T
+
+    if not inplace:
+        gdf = gdf.copy()
     if largest:
         for i,j in intersections:
             if i != j:
