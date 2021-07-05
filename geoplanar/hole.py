@@ -52,10 +52,13 @@ def fill_holes(gdf, largest=True, inplace=False):
         else:
             left = neighbors[neighbors.area==neighbors.area.min()]
         tmpdf = pandas.concat([left, rdf]).dissolve()
-        gdf.geometry[left.index] = tmpdf.geometry[0]
+        try:
+            geom = tmpdf.loc[0, 'geometry']
+            gdf.geometry[left.index] = geopandas.GeoDataFrame(geometry=[geom]).geometry.values
+        except:
+            print(index, tmpdf.shape)
+
     return gdf
-
-
 def missing_interiors(gdf):
     contained = gdf.geometry.sindex.query_bulk(gdf.geometry,
                                                predicate="contains")
