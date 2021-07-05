@@ -4,9 +4,38 @@ import geopandas
 from collections import defaultdict
 from shapely.geometry import box, LineString, Polygon, Point
 from shapely.ops import split, linemerge
+from .overlap import is_overlapping
+from .hole import holes
 
 
 def non_planar_edges(gdf):
+    """Find coincident nonplanar edges
+
+
+    Parameters
+    ----------
+
+    gdf :  GeoDataFrame with polygon (multipolygon) GeoSeries
+
+
+    Returns
+    -------
+
+    missing : dictionary
+              key is origin feature, value is neighboring feature for each pair
+              of coincident nonplanar edges
+
+    Examples
+    --------
+    >>> c1 = [[0,0], [0, 10], [10, 10], [10, 0], [0, 0]]
+    >>> p1 = Polygon(c1)
+    >>> c2 = [[10, 2], [10, 8], [20, 8], [20, 2], [10, 2]]
+    >>> p2 = Polygon(c2)
+    >>> gdf = geopandas.GeoDataFrame(geometry=[p1, p2])
+    >>> geoplanar.non_planar_edges(gdf)
+    defaultdict(set, {0: {1}})
+
+    """
     w = libpysal.weights.Queen.from_dataframe(gdf)
     intersections = gdf.sindex.query_bulk(gdf.geometry, predicate='intersects').T
     w1 = defaultdict(list)
@@ -29,6 +58,18 @@ def planar_enforce(gdf):
     return geopandas.GeoDataFrame(geometry=geoms)
 
 def is_planar_enforced(gdf):
+    """Test if a geodataframe has any planar enforcement violations
+
+
+    Parameters
+    ----------
+
+
+    Returns
+    -------
+    boolean
+    """
+
     if is_overlapping(gdf):
         return False
     if non_planar_edges(gdf):
@@ -50,6 +91,21 @@ def fix_npe_edges(gdf, inplace=False):
     Returns
     -------
     gdf: GeoDataFrame with geometries respected planar edges.
+
+    Examples
+    --------
+    >>> c1 = [[0,0], [0, 10], [10, 10], [10, 0], [0, 0]]
+    >>> p1 = Polygon(c1)
+    >>> c2 = [[10, 2], [10, 8], [20, 8], [20, 2], [10, 2]]
+    >>> p2 = Polygon(c2)
+    >>> gdf = geopandas.GeoDataFrame(geometry=[p1, p2])
+    >>> geoplanar.non_planar_edges(gdf)
+    defaultdict(set, {0: {1}})
+
+    >>> gdf1 = geoplanar.fix_npe_edges(gdf)
+    >>> geoplanar.non_planar_edges(gdf1)
+    defaultdict(set, {})
+
 
     """
 
