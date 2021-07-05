@@ -15,7 +15,6 @@ Planar enforcement for polygon geoseries
 - [slivers](https://github.com/sjsrey/geoplanar/blob/main/notebooks/slivers.ipynb)
 
 
-
 ## Status
 
 `geoplanar` is currently in alpha status and is open to contributions that help shape the scope of the package. It is being developed in support of  [research ](https://nsf.gov/awardsearch/showAward?AWD_ID=1759746&HistoricalAwards=false) and is likely to be undergoing changes as the project evolves.
