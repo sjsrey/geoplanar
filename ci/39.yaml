@@ -6,3 +6,5 @@ dependencies:
   - libpysal
   - geopandas
   - pytest
+  - pytest-cov
+  - codecov
