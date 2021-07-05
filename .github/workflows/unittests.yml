@@ -32,6 +32,7 @@
          shell: bash -l {0}
          run: |
            python -c 'import libpysal; libpysal.examples.fetch_all()'
+           pip install -e . --no-deps --force-reinstall
            pytest -v geoplanar --cov=geoplanar --cov-report=xml
          if: matrix.os != 'windows-latest'
 
