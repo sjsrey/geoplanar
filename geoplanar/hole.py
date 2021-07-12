@@ -3,6 +3,7 @@
 import pandas
 import geopandas
 from shapely.geometry import box
+import shapely
 
 
 def holes(gdf):
@@ -46,13 +47,17 @@ def holes(gdf):
     # explode
     _holes = dbu.explode()
 
-    # hull
-    hull = gdf.dissolve().convex_hull
 
-    # return holes
-    _holes =  _holes[_holes.within(hull.geometry[0])]
+    _holes.reset_index(inplace=True)
 
-    return _holes
+    gaps = []
+    for idx, row in _holes.iterrows():
+        its = b.exterior.intersection(row.geometry)
+        if not isinstance(its, shapely.geometry.multilinestring.MultiLineString):
+            gaps.append(idx)
+
+    return _holes.iloc[gaps]
+
 
 
 def fill_holes(gdf, largest=True, inplace=False):
