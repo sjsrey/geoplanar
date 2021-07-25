@@ -2,6 +2,19 @@
 import numpy
 
 
+def overlaps(gdf):
+
+    pairs = []
+    intersections = gdf.sindex.query_bulk(gdf.geometry, predicate='intersects').T
+
+    for i,j in intersections:
+        if i != j:
+            pairs.append((i,j))
+
+    return pairs
+
+
+
 def trim_overlaps(gdf, largest=True, inplace=False):
     """Trim overlapping polygons
 
