@@ -2,10 +2,10 @@
 import libpysal
 import geopandas
 from collections import defaultdict
-from shapely.geometry import box, LineString, Polygon, Point
-from shapely.ops import split, linemerge
-from .overlap import is_overlapping
-from .hole import holes
+from shapely.geometry import box, LineString, Polygon, Point, MultiPolygon
+from shapely.ops import split, linemerge, polygonize
+from .overlap import is_overlapping, overlaps
+from .hole import holes, missing_interiors
 
 
 def non_planar_edges(gdf):
@@ -157,3 +157,36 @@ def insert_intersections(poly_a, poly_b):
                     new_poly.extend(coord)
             new_polys.append(Polygon(new_poly))
         return new_polys
+
+def self_intersecting_rings(gdf):
+    sirs = []
+    for i, geom in enumerate(gdf.geometry):
+        if not geom.is_valid:
+            sirs.append(i)
+    return sirs
+
+
+
+def fix_self_intersecting_ring(polygon):
+    p0 = polygon.exterior
+    mls = p0.intersection(p0)
+    polys = polygonize(mls)
+    return MultiPolygon(polys)
+
+
+def check_validity(gdf):
+    gdfv = gdf.copy()
+    sirs = self_intersecting_rings(gdf)
+    if sirs:
+        for i in self_intersecting_rings(gdf):
+            gdfv.geometry.iloc[i]= fix_self_intersecting_ring(gdfv.geometry.iloc[i])
+
+    _holes = holes(gdfv)
+    _overlaps = overlaps(gdfv)
+    violations = {}
+    violations['selfintersectingrings'] = sirs
+    violations['holes'] = _holes
+    violations['overlaps'] = _overlaps
+    violations['nonplanaredges'] = non_planar_edges(gdfv)
+    violations['missinginteriors'] = missing_interiors(gdfv)
+    return violations
