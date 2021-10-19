@@ -14,6 +14,7 @@ dependencies:
 - rasterio
 - requests
 - joblib
+- pip
 # doc dependencies
 - sphinx
 - numpydoc
