@@ -23,6 +23,8 @@ Planar enforcement for polygon geoseries
 - usmex_level1.ipynb   mexico/us example at level 1. states to states
 - usmex_level2.ipynb   mexico/us example at level 2. counties to municipios
 
+
+#### Contiguity
 *must run level 1 and 2 notebooks before running the following two:
 
 - usmex_level1_contiguity.ipynb
