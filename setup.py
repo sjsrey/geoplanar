@@ -1,14 +1,14 @@
-from distutils.core import setup
-
 import os
-
-# Get __version__ from libpysal/__init__.py without importing the package
-# __version__ has to be defined in the first line
-with open("geoplanar/__init__.py", "r") as f:
-    exec(f.readline())
-
-
+import versioneer
+from distutils.command.build_py import build_py
 from setuptools import setup
+
+# BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
+# update it when the contents of directories change.
+if os.path.exists("MANIFEST"):
+    os.remove("MANIFEST")
+
+
 
 with open("requirements.txt") as f:
     tests_require = f.readlines()
@@ -18,9 +18,9 @@ with open("README.md") as f:
     long_description = f.read()
 
 
-
 setup(name='geoplanar',
-    version=__version__,
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass({"build_py": build_py}),  
     description='Geographic planar enforcement of polygon geoseries',
     long_description=long_description,
     long_description_content_type="text/markdown",
