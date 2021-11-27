@@ -1,7 +1,14 @@
 import os
 import versioneer
 from distutils.core import setup
+from disutils.command.build_py import build_py
 from setuptools import setup
+
+# BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
+# update it when the contents of directories change.
+if os.path.exists("MANIFEST"):
+    os.remove("MANIFEST")
+
 
 
 with open("requirements.txt") as f:
