@@ -22,13 +22,15 @@ import subprocess
 
 
 # -- Project information -----------------------------------------------------
+import geoplanar
 
 project = 'geoplanar'
 copyright = '2021, Serge Rey & geoplanar contributors'
 author = 'Serge Rey & geoplanar contributors'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = geoplanar.__version__
+version = geoplanar.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -82,9 +84,8 @@ HERE = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 
 
 files_to_copy = [
-    "notebooks/holes.ipynb",
     "notebooks/overlaps.ipynb",
-    "notebooks/slivers.ipynb",
+    "notebooks/gaps.ipynb",
     "notebooks/nonplanaredges.ipynb",
     "notebooks/usmex.ipynb",
 ]
