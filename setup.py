@@ -1,7 +1,6 @@
 import os
 import versioneer
-from distutils.core import setup
-from disutils.command.build_py import build_py
+from distutils.command.build_py import build_py
 from setuptools import setup
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
