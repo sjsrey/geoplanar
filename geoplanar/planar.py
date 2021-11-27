@@ -5,7 +5,8 @@ from collections import defaultdict
 from shapely.geometry import box, LineString, Polygon, Point, MultiPolygon
 from shapely.ops import split, linemerge, polygonize
 from .overlap import is_overlapping, overlaps
-from .hole import holes, missing_interiors
+from .hole import missing_interiors
+from .gap import gaps
 
 
 def non_planar_edges(gdf):
@@ -74,8 +75,8 @@ def is_planar_enforced(gdf):
         return False
     if non_planar_edges(gdf):
         return False
-    _holes = holes(gdf)
-    if _holes.shape[0] > 0:
+    _gaps = gaps(gdf)
+    if _gaps.shape[0] > 0:
         return False
     return True
 
@@ -181,11 +182,11 @@ def check_validity(gdf):
         for i in self_intersecting_rings(gdf):
             gdfv.geometry.iloc[i]= fix_self_intersecting_ring(gdfv.geometry.iloc[i])
 
-    _holes = holes(gdfv)
+    _gaps = gaps(gdfv)
     _overlaps = overlaps(gdfv)
     violations = {}
     violations['selfintersectingrings'] = sirs
-    violations['holes'] = _holes
+    violations['gaps'] = _gaps
     violations['overlaps'] = _overlaps
     violations['nonplanaredges'] = non_planar_edges(gdfv)
     violations['missinginteriors'] = missing_interiors(gdfv)
