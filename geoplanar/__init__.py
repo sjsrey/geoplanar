@@ -1,4 +1,3 @@
-__version__ = "0.1.0"
 """
 GeoPlanar
 
@@ -14,3 +13,5 @@ from geoplanar.planar import (planar_enforce, is_planar_enforced,
                               self_intersecting_rings)
 from geoplanar.valid import isvalid
 
+from . import _version
+__version__ = _version.get_versions()['version']
