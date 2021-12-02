@@ -14,7 +14,7 @@ Contents
 
    usmex
    holes
-   slivers
+   gaps
    nonplanaredges
 
 
