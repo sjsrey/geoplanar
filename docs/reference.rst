@@ -12,12 +12,12 @@ Nonplanar Edges
 
 .. autofunction:: geoplanar.fix_npe_edges
 
-Slivers
--------
+Gaps
+----
 
-.. autofunction:: geoplanar.holes
+.. autofunction:: geoplanar.gaps
 
-.. autofunction:: geoplanar.fill_holes
+.. autofunction:: geoplanar.fill_gaps
 
 
 Holes
