@@ -15,6 +15,7 @@ Planar enforcement for polygon geoseries
 - [nonplanar coincident edges](https://github.com/sjsrey/geoplanar/blob/main/notebooks/nonplanaredges.ipynb)
 - [nonplanar touches](https://github.com/sjsrey/geoplanar/blob/main/notebooks/nonplanartouches.ipynb)
 - [overlaps](https://github.com/sjsrey/geoplanar/blob/main/notebooks/overlaps.ipynb)
+- [holes](https://github.com/sjsrey/geoplanar/blob/main/notebooks/holes.ipynb)
 
 
 ## Status
