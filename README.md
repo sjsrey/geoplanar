@@ -6,6 +6,9 @@ Planar enforcement for polygon geoseries
 
 [![unittests](https://github.com/sjsrey/geoplanar/workflows/.github/workflows/unittests.yml/badge.svg)](https://github.com/sjsrey/geoplanar/actions?query=workflow%3A.github%2Fworkflows%2Funittests.yml)
 |[![Documentation Status](https://readthedocs.org/projects/geoplanar/badge/?version=latest)](https://geoplanar.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/382492314.svg)](https://zenodo.org/badge/latestdoi/382492314)
+
+
 
 
 `geoplanar` supports the detection and correction of violations of [planar enforcement](https://ibis.geog.ubc.ca/courses/klink/gis.notes/ncgia/u12.html#SEC12.6) for polygon geoseries including:
