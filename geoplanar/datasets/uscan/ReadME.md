@@ -1,0 +1,1 @@
+In order to make all the parquet files follow steps on the data processing notebook.
