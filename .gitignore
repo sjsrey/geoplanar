@@ -3,3 +3,7 @@
 
 # Ignore ipynb checkpoints
 .ipynb_checkpoints
+
+__pycache__/
+
+geoplanar.egg-info/
