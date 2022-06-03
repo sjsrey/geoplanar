@@ -15,7 +15,9 @@ Contents
    usmex
    holes
    gaps
+   overlaps
    nonplanaredges
+   nonplanartouches
 
 
 
