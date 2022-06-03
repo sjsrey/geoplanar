@@ -25,7 +25,7 @@ import subprocess
 import geoplanar
 
 project = 'geoplanar'
-copyright = '2021, Serge Rey & geoplanar contributors'
+copyright = '2021-, Serge Rey & geoplanar contributors'
 author = 'Serge Rey & geoplanar contributors'
 
 # The full version, including alpha/beta/rc tags
@@ -86,7 +86,9 @@ HERE = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 files_to_copy = [
     "notebooks/overlaps.ipynb",
     "notebooks/gaps.ipynb",
+    "notebooks/holes.ipynb",
     "notebooks/nonplanaredges.ipynb",
+    "notebooks/nonplanartouches.ipynb",
     "notebooks/usmex.ipynb",
 ]
 
