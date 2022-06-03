@@ -2,7 +2,7 @@
 import libpysal
 import geopandas
 from collections import defaultdict
-from shapely.geometry import box, LineString, Polygon, Point, MultiPolygon
+from shapely.geometry import LineString, Polygon, Point, MultiPolygon
 from shapely.ops import split, linemerge, polygonize
 from .overlap import is_overlapping, overlaps
 from .hole import missing_interiors
@@ -11,7 +11,6 @@ from .gap import gaps
 
 def non_planar_edges(gdf):
     """Find coincident nonplanar edges
-
 
     Parameters
     ----------
@@ -38,9 +37,10 @@ def non_planar_edges(gdf):
 
     """
     w = libpysal.weights.Queen.from_dataframe(gdf)
-    intersections = gdf.sindex.query_bulk(gdf.geometry, predicate='intersects').T
+    intersections = gdf.sindex.query_bulk(gdf.geometry,
+                                          predicate='intersects').T
     w1 = defaultdict(list)
-    for i,j in intersections:
+    for i, j in intersections:
         if i != j:
             w1[i].append(j)
     missing = defaultdict(set)
@@ -53,18 +53,19 @@ def non_planar_edges(gdf):
                 missing[l] = missing[l].union([r])
     return missing
 
+
 def planar_enforce(gdf):
     uu = gdf.unary_union
     geoms = [uu.intersection(row.geometry) for index, row in gdf.iterrows()]
     return geopandas.GeoDataFrame(geometry=geoms)
 
+
 def is_planar_enforced(gdf):
     """Test if a geodataframe has any planar enforcement violations
 
-
     Parameters
     ----------
-
+    gdf: GeoDataFrame with polygon geoseries for geometry
 
     Returns
     -------
@@ -79,6 +80,7 @@ def is_planar_enforced(gdf):
     if _gaps.shape[0] > 0:
         return False
     return True
+
 
 def fix_npe_edges(gdf, inplace=False):
     """Fix all npe intersecting edges in geoseries.
@@ -146,7 +148,7 @@ def insert_intersections(poly_a, poly_b):
                             left, right = splits.geoms
                             exterior = linemerge([left, right])
                     new_parts.append(Polygon(list(zip(*exterior.coords.xy))))
-                new_polys.append(MultiPolygon(new_parts))                   
+                new_polys.append(MultiPolygon(new_parts))
             else:
                 exterior = LineString(list(poly.exterior.coords))
                 sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy))]
@@ -157,22 +159,33 @@ def insert_intersections(poly_a, poly_b):
                         exterior = linemerge([left, right])
                 new_polys.append(Polygon(list(zip(*exterior.coords.xy))))
         return new_polys
-    else:
-        lin_a = LineString(list(poly_a.exterior.coords))
-        lin_b = LineString(list(poly_b.exterior.coords))
+    else:    # intersections are points
         new_polys = []
-        pts = lin_a.intersection(lin_b)
-        for lin in [lin_a, lin_b]:
-            splits = split(lin, pts).geoms
-            coords = [list(zip(*line.coords.xy)) for line in list(splits)]
-            new_poly = coords[0]
-            for coord in coords[1:]:
-                if coord[0] == new_poly[-1]:
-                    new_poly.extend(coord[1:])
+        for poly in [poly_a, poly_b]:
+            if isinstance(poly, MultiPolygon):
+                new_parts = []
+                for part in poly.geoms:
+                    exterior = LineString(list(part.exterior.coords))
+                    splits = split(exterior, pint).geoms
+                    if len(splits) > 1:
+                        left, right = splits
+                        exterior = linemerge([left, right])
+                        part = Polygon(exterior)
+                    new_parts.append(part)
+                new_poly = MultiPolygon(new_parts)
+                new_polys.append(new_poly)
+            else:
+                exterior = LineString(list(poly.exterior.coords))
+                splits = split(exterior, pint).geoms
+                if len(splits) > 1:
+                    left, right = splits
+                    exterior = linemerge([left, right])
+                    new_poly = Polygon(exterior)
+                    new_polys.append(Polygon(new_poly))
                 else:
-                    new_poly.extend(coord)
-            new_polys.append(Polygon(new_poly))
+                    new_polys.append(poly)
         return new_polys
+
 
 def self_intersecting_rings(gdf):
     sirs = []
@@ -180,7 +193,6 @@ def self_intersecting_rings(gdf):
         if not geom.is_valid:
             sirs.append(i)
     return sirs
-
 
 
 def fix_self_intersecting_ring(polygon):
@@ -195,7 +207,8 @@ def check_validity(gdf):
     sirs = self_intersecting_rings(gdf)
     if sirs:
         for i in self_intersecting_rings(gdf):
-            gdfv.geometry.iloc[i]= fix_self_intersecting_ring(gdfv.geometry.iloc[i])
+            fixed_i = fix_self_intersecting_ring(gdfv.geometry.iloc[i])
+            gdfv.geometry.iloc[i] = fixed_i
 
     _gaps = gaps(gdfv)
     _overlaps = overlaps(gdfv)
