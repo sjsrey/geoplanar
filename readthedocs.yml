@@ -1,9 +1,8 @@
 version: 2
-formats: []
+build:
+  os: "ubuntu-20.04"
+  tools:
+    python: "mambaforge-4.10"
+
 conda:
-    environment: docs/environment.yml
-python:
-    version: 3
-    install:
-        - method: pip
-          path: .
+  environment: environment.yml
