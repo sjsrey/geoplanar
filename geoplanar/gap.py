@@ -42,7 +42,7 @@ def gaps(gdf):
     u = gdf.unary_union
 
     # diff of b and u
-    dbu = geopandas.GeoDataFrame(geometry=[b.difference(u)])
+    dbu = geopandas.GeoDataFrame(geometry=[b.difference(u)], crs=gdf.crs)
 
     # explode
     _gaps = dbu.explode(index_parts=False, ignore_index=True)
