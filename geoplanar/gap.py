@@ -42,7 +42,7 @@ def gaps(gdf):
     u = gdf.unary_union
 
     # diff of b and u
-    dbu = geopandas.GeoDataFrame(geometry=[b.difference(u)])
+    dbu = geopandas.GeoDataFrame(geometry=[b.difference(u)], crs=gdf.crs)
 
     # explode
     _gaps = dbu.explode(index_parts=False, ignore_index=True)
@@ -57,7 +57,6 @@ def gaps(gdf):
     return _gaps.iloc[gaps]
 
 
-
 def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     """Fill any gaps in a geodataframe.
 
@@ -65,11 +64,11 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     ----------
 
     gdf :  GeoDataFrame with polygon (multipolygon) GeoSeries
-    
+
 
     gap_df:  GeoDataFrame with gaps to fill
              If None, gaps will be determined
-    
+
     largest: boolean (Default: True)
           Merge each gap with its largest (True), or smallest (False) neighbor
 
@@ -101,7 +100,6 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     dtype: float64
     """
 
-
     if gap_df is None:
         gap_df = gaps(gdf)
 
@@ -110,16 +108,19 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
 
     for index, row in gap_df.iterrows():
         rdf = geopandas.GeoDataFrame(geometry=[row.geometry])
-        neighbors = geopandas.sjoin(left_df=gdf, right_df=rdf, how='inner',
-                                    predicate='intersects')
+        neighbors = geopandas.sjoin(
+            left_df=gdf, right_df=rdf, how="inner", predicate="intersects"
+        )
         if largest:
-            left = neighbors[neighbors.area==neighbors.area.max()]
+            left = neighbors[neighbors.area == neighbors.area.max()]
         else:
-            left = neighbors[neighbors.area==neighbors.area.min()]
+            left = neighbors[neighbors.area == neighbors.area.min()]
         tmpdf = pandas.concat([left, rdf]).dissolve()
         try:
-            geom = tmpdf.loc[0, 'geometry']
-            gdf.geometry[left.index] = geopandas.GeoDataFrame(geometry=[geom]).geometry.values
+            geom = tmpdf.loc[0, "geometry"]
+            gdf.geometry[left.index] = geopandas.GeoDataFrame(
+                geometry=[geom]
+            ).geometry.values
         except:
             print(index, tmpdf.shape)
 
