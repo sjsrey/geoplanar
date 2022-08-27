@@ -33,6 +33,8 @@ def test_fill_gaps():
     assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
     gdf1 = fill_gaps(gdf, largest=False)
     assert_equal(gdf1.area.values, numpy.array([100.0, 40.0]))
+    gdf1 = fill_gaps(gdf, largest=None)
+    assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
     p1 = box(0, 0, 10, 10)
     p2 = Polygon([(10, 10), (12, 8), (10, 6), (12, 4), (10, 2), (20, 5)])
     gdf = geopandas.GeoDataFrame(geometry=[p1, p2])

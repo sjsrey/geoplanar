@@ -70,7 +70,8 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
              If None, gaps will be determined
 
     largest: boolean (Default: True)
-          Merge each gap with its largest (True), or smallest (False) neighbor
+          Merge each gap with its largest (True), or smallest (False) neighbor.
+          If None, merge with any neighbor non-deterministically but performantly.
 
     inplace: boolean (default: False)
           Change the geoseries of current dataframe
@@ -99,6 +100,8 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     1     32.0
     dtype: float64
     """
+    from collections import defaultdict
+    from shapely.ops import unary_union
 
     if gap_df is None:
         gap_df = gaps(gdf)
@@ -106,22 +109,23 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     if not inplace:
         gdf = gdf.copy()
 
-    for index, row in gap_df.iterrows():
-        rdf = geopandas.GeoDataFrame(geometry=[row.geometry])
-        neighbors = geopandas.sjoin(
-            left_df=gdf, right_df=rdf, how="inner", predicate="intersects"
-        )
-        if largest:
-            left = neighbors[neighbors.area == neighbors.area.max()]
+    gap_idx, gdf_idx = gdf.sindex.query_bulk(gap_df.geometry, predicate="intersects")
+
+    to_merge = defaultdict(set)
+    for g_ix in range(len(gap_df)):
+        neighbors = gdf_idx[gap_idx == g_ix]
+        if largest is None:  # don't care which polygon is a gap attached to
+            to_merge[neighbors[0]].add(g_ix)
+        elif largest:
+            to_merge[gdf.iloc[neighbors].area.idxmax()].add(g_ix)
         else:
-            left = neighbors[neighbors.area == neighbors.area.min()]
-        tmpdf = pandas.concat([left, rdf]).dissolve()
-        try:
-            geom = tmpdf.loc[0, "geometry"]
-            gdf.geometry[left.index] = geopandas.GeoDataFrame(
-                geometry=[geom]
-            ).geometry.values
-        except:
-            print(index, tmpdf.shape)
+            to_merge[gdf.iloc[neighbors].area.idxmin()].add(g_ix)
+
+    new_geom = []
+    for k, v in to_merge.items():
+        new_geom.append(
+            unary_union([gdf.geometry.iloc[k]] + [gap_df.geometry.iloc[i] for i in v])
+        )
+    gdf.loc[gdf.index.take(list(to_merge.keys())), gdf.geometry.name] = new_geom
 
     return gdf
