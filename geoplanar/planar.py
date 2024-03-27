@@ -38,7 +38,9 @@ def non_planar_edges(gdf):
     defaultdict(set, {0: {1}})
 
     """
-    w = libpysal.weights.Queen.from_dataframe(gdf, use_index=False)
+    w = libpysal.weights.Queen.from_dataframe(
+        gdf, use_index=False, silence_warnings=True
+    )
 
     if Version(geopandas.__version__) >= Version("0.14.0"):
         intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
@@ -128,7 +130,7 @@ def fix_npe_edges(gdf, inplace=False):
             new_a, new_b = insert_intersections(poly_a, poly_b)
             poly_a = new_a
             gdf.loc[key, gdf.geometry.name] = new_a
-            gdf.loc[j, gdf.geometry.name]= new_b
+            gdf.loc[j, gdf.geometry.name] = new_b
     return gdf
 
 
