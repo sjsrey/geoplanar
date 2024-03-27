@@ -47,29 +47,30 @@ def trim_overlaps(gdf, largest=True, inplace=False):
     if not inplace:
         gdf = gdf.copy()
     if largest:
-        for i,j in intersections:
+        for i, j in intersections:
             if i != j:
                 left = gdf.geometry[i]
                 right = gdf.geometry[j]
                 if left.area < right.area:
                     right = gdf.geometry[j].difference(gdf.geometry[i])
-                    gdf.geometry[j] = right
+                    gdf.loc[j, gdf.geometry.name] = right
                 else:
                     left = gdf.geometry[i].difference(gdf.geometry[j])
-                    gdf.geometry[i] = left
+                    gdf.loc[i, gdf.geometry.name] = left
     else:
-        for i,j in intersections:
+        for i, j in intersections:
             if i != j:
                 left = gdf.geometry[i]
                 right = gdf.geometry[j]
                 if left.area > right.area:
                     right = gdf.geometry[j].difference(gdf.geometry[i])
-                    gdf.geometry[j] = right
+                    gdf.loc[j, gdf.geometry.name] = right
                 else:
                     left = gdf.geometry[i].difference(gdf.geometry[j])
-                    gdf.geometry[i] = left
+                    gdf.loc[i, gdf.geometry.name] = left
 
     return gdf
+
 
 def is_overlapping(gdf):
     "Test for overlapping features in geoseries."

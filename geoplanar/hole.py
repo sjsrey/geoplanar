@@ -109,5 +109,5 @@ def add_interiors(gdf, inplace=False):
         to_add = contained[:, contained[0] != contained[1]].T
         for add in to_add:
             i, j = add
-            gdf.geometry[i] = gdf.geometry[i].difference(gdf.geometry[j])
+            gdf.loc[i, gdf.geometry.name] = gdf.geometry[i].difference(gdf.geometry[j])
     return gdf

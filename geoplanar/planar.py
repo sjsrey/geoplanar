@@ -127,8 +127,8 @@ def fix_npe_edges(gdf, inplace=False):
             poly_b = gdf.iloc[j].geometry
             new_a, new_b = insert_intersections(poly_a, poly_b)
             poly_a = new_a
-            gdf.geometry[key] = new_a
-            gdf.geometry[j] = new_b
+            gdf.loc[key, gdf.geometry.name] = new_a
+            gdf.loc[j, gdf.geometry.name]= new_b
     return gdf
 
 
