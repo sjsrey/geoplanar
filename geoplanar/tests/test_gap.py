@@ -19,7 +19,7 @@ def setup():
 def test_gaps():
     p1 = box(0, 0, 10, 10)
     p2 = Polygon([(10, 10), (12, 8), (10, 6), (12, 4), (10, 2), (20, 5)])
-    gdf = geopandas.GeoDataFrame(geometry=[p1, p2], crs=4326)
+    gdf = geopandas.GeoDataFrame(geometry=[p1, p2], crs=3857)
     h = gaps(gdf)
     assert_equal(h.area.values, numpy.array([4.0, 4.0]))
     assert gdf.crs.equals(h.crs)
