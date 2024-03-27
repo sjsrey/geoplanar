@@ -4,6 +4,8 @@ import geopandas
 from collections import defaultdict
 from shapely.geometry import LineString, Polygon, Point, MultiPolygon
 from shapely.ops import split, linemerge, polygonize
+from packaging.version import Version
+
 from .overlap import is_overlapping, overlaps
 from .hole import missing_interiors
 from .gap import gaps
@@ -36,9 +38,12 @@ def non_planar_edges(gdf):
     defaultdict(set, {0: {1}})
 
     """
-    w = libpysal.weights.Queen.from_dataframe(gdf)
-    intersections = gdf.sindex.query_bulk(gdf.geometry,
-                                          predicate='intersects').T
+    w = libpysal.weights.Queen.from_dataframe(gdf, use_index=False)
+
+    if Version(geopandas.__version__) >= Version("0.14.0"):
+        intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
+    else:
+        intersections = gdf.sindex.query_bulk(gdf.geometry, predicate="intersects").T
     w1 = defaultdict(list)
     for i, j in intersections:
         if i != j:
@@ -129,7 +134,7 @@ def fix_npe_edges(gdf, inplace=False):
 
 def insert_intersections(poly_a, poly_b):
     """Correct two npe intersecting polygons by inserting intersection points
-     on intersecting edges
+    on intersecting edges
     """
 
     pint = poly_a.intersection(poly_b)
@@ -159,7 +164,7 @@ def insert_intersections(poly_a, poly_b):
                         exterior = linemerge([left, right])
                 new_polys.append(Polygon(list(zip(*exterior.coords.xy))))
         return new_polys
-    else:    # intersections are points
+    else:  # intersections are points
         new_polys = []
         for poly in [poly_a, poly_b]:
             if isinstance(poly, MultiPolygon):
@@ -213,9 +218,9 @@ def check_validity(gdf):
     _gaps = gaps(gdfv)
     _overlaps = overlaps(gdfv)
     violations = {}
-    violations['selfintersectingrings'] = sirs
-    violations['gaps'] = _gaps
-    violations['overlaps'] = _overlaps
-    violations['nonplanaredges'] = non_planar_edges(gdfv)
-    violations['missinginteriors'] = missing_interiors(gdfv)
+    violations["selfintersectingrings"] = sirs
+    violations["gaps"] = _gaps
+    violations["overlaps"] = _overlaps
+    violations["nonplanaredges"] = non_planar_edges(gdfv)
+    violations["missinginteriors"] = missing_interiors(gdfv)
     return violations

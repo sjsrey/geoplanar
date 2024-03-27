@@ -4,6 +4,7 @@ import pandas
 import geopandas
 from shapely.geometry import box
 import shapely
+from packaging.version import Version
 
 
 def gaps(gdf):
@@ -109,7 +110,12 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     if not inplace:
         gdf = gdf.copy()
 
-    gap_idx, gdf_idx = gdf.sindex.query_bulk(gap_df.geometry, predicate="intersects")
+    if Version(geopandas.__version__) < Version("0.14.0"):
+        gap_idx, gdf_idx = gdf.sindex.query_bulk(
+            gap_df.geometry, predicate="intersects"
+        )
+    else:
+        gap_idx, gdf_idx = gdf.sindex.query(gap_df.geometry, predicate="intersects")
 
     to_merge = defaultdict(set)
     for g_ix in range(len(gap_df)):

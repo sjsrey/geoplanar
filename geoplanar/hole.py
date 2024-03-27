@@ -5,9 +5,13 @@ import geopandas
 from shapely.geometry import box
 import shapely
 
+from packaging.version import Version
+
+GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
+
 
 def missing_interiors(gdf):
-    """ Find any missing interiors.
+    """Find any missing interiors.
 
     For a planar enforced polygon layer, there should be no cases of a polygon
     being contained in another polygon. Instead the "contained" polygon is a
@@ -37,18 +41,20 @@ def missing_interiors(gdf):
     >>> mi
     [(0, 1), (0, 2)]
     """
-    contained = gdf.geometry.sindex.query_bulk(gdf.geometry,
-                                               predicate="contains")
+    if GPD_GE_014:
+        contained = gdf.geometry.sindex.query(gdf.geometry, predicate="contains")
+    else:
+        contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
     pairs = []
     for pair in contained.T:
-        i,j = pair
+        i, j = pair
         if i != j:
-            pairs.append((i,j))
+            pairs.append((i, j))
     return pairs
 
 
 def add_interiors(gdf, inplace=False):
-    """ Add any missing interiors.
+    """Add any missing interiors.
 
     For a planar enforced polygon layer, there should be no cases of a polygon
     being contained in another polygon. Instead the "contained" polygon is a
@@ -93,8 +99,10 @@ def add_interiors(gdf, inplace=False):
     if not inplace:
         gdf = gdf.copy()
 
-    contained = gdf.geometry.sindex.query_bulk(gdf.geometry,
-                                               predicate="contains")
+    if GPD_GE_014:
+        contained = gdf.geometry.sindex.query(gdf.geometry, predicate="contains")
+    else:
+        contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
     a, k = contained.shape
     n = gdf.shape[0]
     if k > gdf.shape[0]:

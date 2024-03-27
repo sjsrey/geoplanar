@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 import numpy
+import geopandas
+
+from packaging.version import Version
+
+GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 
 
 def overlaps(gdf):
-
     pairs = []
-    intersections = gdf.sindex.query_bulk(gdf.geometry, predicate='intersects').T
+    if GPD_GE_014:
+        intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
+    else:
+        intersections = gdf.sindex.query_bulk(gdf.geometry, predicate="intersects").T
 
-    for i,j in intersections:
+    for i, j in intersections:
         if i != j:
-            pairs.append((i,j))
+            pairs.append((i, j))
 
     return pairs
-
 
 
 def trim_overlaps(gdf, largest=True, inplace=False):
@@ -33,7 +39,10 @@ def trim_overlaps(gdf, largest=True, inplace=False):
     gdf: geodataframe with corrected geometries
 
     """
-    intersections = gdf.sindex.query_bulk(gdf.geometry, predicate='intersects').T
+    if GPD_GE_014:
+        intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
+    else:
+        intersections = gdf.sindex.query_bulk(gdf.geometry, predicate="intersects").T
 
     if not inplace:
         gdf = gdf.copy()
