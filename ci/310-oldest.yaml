@@ -2,9 +2,10 @@ name: test
 channels:
   - conda-forge
 dependencies:
-  - python=3.8
-  - libpysal
-  - geopandas
+  - python=3.10
+  - libpysal=4.6.0
+  - geopandas=0.10.2
+  - packaging
   - pytest
   - pytest-cov
   - codecov

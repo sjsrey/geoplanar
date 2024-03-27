@@ -1,52 +1,58 @@
- on:
-   push:
-     branches:
-     - '*'
-   pull_request:
-     branches:
-     - '*'
-   schedule:
-     - cron: '59 21 * * *'
+name: Tests
 
- jobs:
-   unittests:
-     name: ${{ matrix.os }}, ${{ matrix.environment-file }}
-     runs-on: ${{ matrix.os }}
-     #timeout-minutes: 25
-     strategy:
-       matrix:
-         os: ['macos-latest', 'ubuntu-latest', 'windows-latest']
-         environment-file: [ci/37.yaml, ci/38.yaml, ci/39.yaml]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: "0 0 * * 1,4"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Manual test execution
+        default: test
+        required: false
 
-     steps:
-       - name: checkout repo
-         uses: actions/checkout@v2
+jobs:
+  Test:
+    name: ${{ matrix.os }}, ${{ matrix.environment-file }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        environment-file:
+          - ci/envs/310-oldest.yaml
+          - ci/envs/310-latest.yaml
+          - ci/envs/311-latest.yaml
+          - ci/envs/312-latest.yaml
+          - ci/envs/312-dev.yaml
+        include:
+          - environment-file: ci/envs/312-latest.yaml
+            os: macos-latest
+          - environment-file: ci/envs/312-latest.yaml
+            os: macos-14 # Apple Silicon
+          - environment-file: ci/envs/312-latest.yaml
+            os: windows-latest
+    defaults:
+      run:
+        shell: bash -l {0}
 
-       - name: setup micromamba
-         uses: mamba-org/provision-with-micromamba@main
-         with:
-           environment-file: ${{ matrix.environment-file }}
-           micromamba-version: 'latest'
+    steps:
+      - uses: actions/checkout@v4
 
-       - name: run tests - bash
-         shell: bash -l {0}
-         run: |
-           python -c 'import libpysal; libpysal.examples.fetch_all()'
-           pip install -e . --no-deps --force-reinstall
-           pytest -v geoplanar --cov=geoplanar --cov-report=xml
-         if: matrix.os != 'windows-latest'
+      - name: setup micromamba
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: ${{ matrix.environment-file }}
 
-       - name: run tests - powershell
-         shell: powershell
-         run:  |
-           python -c 'import libpysal; libpysal.examples.fetch_all()'
-           pip install -e . --no-deps --force-reinstall
-           pytest -v geoplanar --cov=geoplanar --cov-report=xml
-         if: matrix.os == 'windows-latest'
+      - name: Install geoplanar
+        run: pip install . --no-deps --force-reinstall
 
-       - name: ${{ matrix.os }}, ${{ matrix.environment-file }}
-         uses: codecov/codecov-action@v1
-         with:
-           token: ${{ secrets.CODECOV_TOKEN }}
-           file: ./coverage.xml
-           name: libpysal-codecov
+      - name: Test geoplanar
+        run: |
+          pytest -v --color yes --cov geoplanar --cov-append --cov-report term-missing --cov-report xml geoplanar
+
+      - uses: codecov/codecov-action@v4
