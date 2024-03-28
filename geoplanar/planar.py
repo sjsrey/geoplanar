@@ -38,9 +38,12 @@ def non_planar_edges(gdf):
     defaultdict(set, {0: {1}})
 
     """
-    w = libpysal.weights.Queen.from_dataframe(
-        gdf, use_index=False, silence_warnings=True
-    )
+    if Version(libpysal.__version__) >= Version("4.8.0"):
+        w = libpysal.weights.Queen.from_dataframe(
+            gdf, use_index=False, silence_warnings=True
+        )
+    else:
+        w = libpysal.weights.Queen.from_dataframe(gdf, silence_warnings=True)
 
     if Version(geopandas.__version__) >= Version("0.14.0"):
         intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
