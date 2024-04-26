@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
-import libpysal
-import geopandas
 from collections import defaultdict
-from shapely.geometry import LineString, Polygon, Point, MultiPolygon
-from shapely.ops import split, linemerge, polygonize
-from packaging.version import Version
 
-from .overlap import is_overlapping, overlaps
-from .hole import missing_interiors
+import geopandas
+import libpysal
+from packaging.version import Version
+from shapely.geometry import LineString, MultiPolygon, Point, Polygon
+from shapely.ops import linemerge, polygonize, split
+
 from .gap import gaps
+from .hole import missing_interiors
+from .overlap import is_overlapping, overlaps
+
+__all__ = [
+    "non_planar_edges",
+    "planar_enforce",
+    "is_planar_enforced",
+    "fix_npe_edges",
+    "insert_intersections",
+    "self_intersecting_rings",
+    "check_validity",
+]
 
 
 def non_planar_edges(gdf):
@@ -56,8 +67,8 @@ def non_planar_edges(gdf):
             for value in w1[key]:
                 pair = [key, value]
                 pair.sort()
-                l, r = pair
-                missing[l] = missing[l].union([r])
+                left, right = pair
+                missing[left] = missing[left].union([right])
     return missing
 
 
@@ -142,7 +153,7 @@ def insert_intersections(poly_a, poly_b):
     pint = poly_a.intersection(poly_b)
     if isinstance(pint, LineString):
         pnts = pint
-        sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy))]
+        sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy, strict=False))]
         new_polys = []
         for poly in [poly_a, poly_b]:
             if isinstance(poly, MultiPolygon):
@@ -154,17 +165,19 @@ def insert_intersections(poly_a, poly_b):
                         if len(splits.geoms) > 1:
                             left, right = splits.geoms
                             exterior = linemerge([left, right])
-                    new_parts.append(Polygon(list(zip(*exterior.coords.xy))))
+                    new_parts.append(
+                        Polygon(list(zip(*exterior.coords.xy, strict=False)))
+                    )
                 new_polys.append(MultiPolygon(new_parts))
             else:
                 exterior = LineString(list(poly.exterior.coords))
-                sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy))]
+                sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy, strict=False))]
                 for pnt in sp:
                     splits = split(exterior, pnt)
                     if len(splits.geoms) > 1:
                         left, right = splits.geoms
                         exterior = linemerge([left, right])
-                new_polys.append(Polygon(list(zip(*exterior.coords.xy))))
+                new_polys.append(Polygon(list(zip(*exterior.coords.xy, strict=False))))
         return new_polys
     else:  # intersections are points
         new_polys = []

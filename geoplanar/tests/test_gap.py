@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import pytest
 import geopandas
-from shapely.geometry import box, Polygon
-from geoplanar.gap import gaps, fill_gaps
 import numpy
 from numpy.testing import assert_equal
+from shapely.geometry import Polygon, box
+
+from geoplanar.gap import fill_gaps, gaps
 
 
 def setup():

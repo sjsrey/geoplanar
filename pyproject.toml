@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
+[project]
+name = "geoplanar"
+dynamic = ["version"]
+authors = [
+    {name = "Serge Rey", email = "sjsrey@gmail.com"},
+]
+license = {text = "3-Clause BSD"}
+description = "Geographic planar enforcement of polygon geoseries"
+readme = "README.md"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas",
+    "libpysal",
+    "packaging",
+]
+
+[project.urls]
+Home = "https://geoplanar.readthedocs.io"
+Repository = "https://github.com/sjsrey/geoplanar"
+
+[tool.setuptools.packages.find]
+include = [
+    "geoplanar",
+    "geoplanar.*",
+]
+
+[tool.coverage.run]
+omit = ["geoplanar/tests/*"]
+
+[tool.ruff]
+line-length = 88
+lint.select = ["E", "F", "W", "I", "UP", "N", "B", "A", "C4", "SIM", "ARG"]
+lint.ignore = ["B006", "F403", "SIM108"]
+exclude = ["docs"]

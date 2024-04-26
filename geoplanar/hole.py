@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 #
-import pandas
 import geopandas
-from shapely.geometry import box
-import shapely
-
 from packaging.version import Version
+
+__all__ = ["add_interiors", "missing_interiors"]
 
 GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 
@@ -58,7 +56,8 @@ def add_interiors(gdf, inplace=False):
 
     For a planar enforced polygon layer, there should be no cases of a polygon
     being contained in another polygon. Instead the "contained" polygon is a
-    hole in the "containing" polygon. This function finds and corrects any such violations.
+    hole in the "containing" polygon. This function finds and corrects any such
+    violations.
 
 
     Parameters
@@ -103,8 +102,7 @@ def add_interiors(gdf, inplace=False):
         contained = gdf.geometry.sindex.query(gdf.geometry, predicate="contains")
     else:
         contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
-    a, k = contained.shape
-    n = gdf.shape[0]
+    k = contained.shape[1]
     if k > gdf.shape[0]:
         to_add = contained[:, contained[0] != contained[1]].T
         for add in to_add:
