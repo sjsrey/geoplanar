@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 #
-import pandas
 import geopandas
-from shapely.geometry import box
 import shapely
 from packaging.version import Version
+from shapely.geometry import box
+
+__all__ = ["gaps", "fill_gaps"]
 
 
 def gaps(gdf):
@@ -102,6 +103,7 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     dtype: float64
     """
     from collections import defaultdict
+
     from shapely.ops import unary_union
 
     if gap_df is None:

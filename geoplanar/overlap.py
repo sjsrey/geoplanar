@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import numpy
 import geopandas
-
+import numpy
 from packaging.version import Version
+
+__all__ = ["overlaps", "trim_overlaps", "is_overlapping"]
 
 GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 
@@ -31,7 +32,8 @@ def trim_overlaps(gdf, largest=True, inplace=False):
     gdf:  geodataframe with polygon geometries
 
     largest: boolean
-             True: trim the larger of the pair of overlapping polygons, False: trim the smaller polygon.
+             True: trim the larger of the pair of overlapping polygons,
+             False: trim the smaller polygon.
 
     Returns
     -------

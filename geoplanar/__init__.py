@@ -4,14 +4,14 @@ GeoPlanar
 A module for handling planar enforcement for polygon geoseries.
 """
 
-from geoplanar.overlap import trim_overlaps, is_overlapping, overlaps
-from geoplanar.gap import (gaps, fill_gaps)
-from geoplanar.hole import (add_interiors, missing_interiors)
-from geoplanar.planar import (planar_enforce, is_planar_enforced,
-                              fix_npe_edges, insert_intersections,
-                              non_planar_edges, check_validity,
-                              self_intersecting_rings)
-from geoplanar.valid import isvalid
+import contextlib
+from importlib.metadata import PackageNotFoundError, version
 
-from . import _version
-__version__ = _version.get_versions()['version']
+from geoplanar.gap import *
+from geoplanar.hole import *
+from geoplanar.overlap import *
+from geoplanar.planar import *
+from geoplanar.valid import *
+
+with contextlib.suppress(PackageNotFoundError):
+    __version__ = version("geoplanar")
