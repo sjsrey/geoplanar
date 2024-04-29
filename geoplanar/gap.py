@@ -47,7 +47,10 @@ def gaps(gdf):
         ),
         crs=gdf.crs,
     )
-    poly_idx, _ = gdf.sindex.query(polygons, predicate="covers")
+    if GPD_GE_014:
+        poly_idx, _ = gdf.sindex.query(polygons, predicate="covers")
+    else:
+        poly_idx, _ = gdf.sindex.query_bulk(polygons, predicate="covers")
 
     return polygons.drop(poly_idx).reset_index(drop=True)
 
