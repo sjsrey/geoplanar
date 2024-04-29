@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #
 import geopandas
+import pandas as pd
 from packaging.version import Version
 
 __all__ = ["add_interiors", "missing_interiors"]
@@ -93,6 +94,9 @@ def add_interiors(gdf, inplace=False):
     1     4.0
     2     4.0
     """
+    # TODO: ensure any index can be used
+    assert pd.RangeIndex(len(gdf)).equals(gdf.index)
+
     if not inplace:
         gdf = gdf.copy()
 
