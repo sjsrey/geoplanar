@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import geopandas
-import numpy
 from packaging.version import Version
 
 __all__ = ["overlaps", "trim_overlaps", "is_overlapping"]
@@ -9,17 +8,12 @@ GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 
 
 def overlaps(gdf):
-    pairs = []
     if GPD_GE_014:
-        intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
+        i, j = gdf.sindex.query(gdf.geometry, predicate="overlaps").T
     else:
-        intersections = gdf.sindex.query_bulk(gdf.geometry, predicate="intersects").T
+        i, j = gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps").T
 
-    for i, j in intersections:
-        if i != j:
-            pairs.append((i, j))
-
-    return pairs
+    return list(zip(i, j, strict=False))
 
 
 def trim_overlaps(gdf, largest=True, inplace=False):
@@ -77,8 +71,11 @@ def trim_overlaps(gdf, largest=True, inplace=False):
 def is_overlapping(gdf):
     "Test for overlapping features in geoseries."
 
-    uu = gdf.unary_union
-    area_sum = gdf.area.sum()
-    if not numpy.isclose(area_sum, uu.area):
+    if GPD_GE_014:
+        overlaps = gdf.sindex.query(gdf.geometry, predicate="overlaps")
+    else:
+        overlaps = gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps")
+
+    if overlaps.shape[1] > 0:
         return True
     return False
