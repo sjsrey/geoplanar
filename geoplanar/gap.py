@@ -3,9 +3,11 @@
 import geopandas
 import shapely
 from packaging.version import Version
-from shapely.geometry import box
 
 __all__ = ["gaps", "fill_gaps"]
+
+GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
+GPD_GE_100 = Version(geopandas.__version__) >= Version("1.0.0dev")
 
 
 def gaps(gdf):
@@ -37,26 +39,20 @@ def gaps(gdf):
     array([4., 4.])
     """
 
-    # get box
-    b = box(*gdf.total_bounds)
+    polygons = geopandas.GeoSeries(
+        shapely.get_parts(
+            shapely.polygonize(
+                [gdf.boundary.union_all() if GPD_GE_100 else gdf.boundary.unary_union]
+            )
+        ),
+        crs=gdf.crs,
+    )
+    if GPD_GE_014:
+        poly_idx, _ = gdf.sindex.query(polygons, predicate="covers")
+    else:
+        poly_idx, _ = gdf.sindex.query_bulk(polygons, predicate="covers")
 
-    # form unary union
-    u = gdf.unary_union
-
-    # diff of b and u
-    dbu = geopandas.GeoDataFrame(geometry=[b.difference(u)], crs=gdf.crs)
-
-    # explode
-    _gaps = dbu.explode(index_parts=False, ignore_index=True)
-
-    # gaps are polygons that do not share an edge with the bounding box of the union
-    gaps = []
-    for idx, row in _gaps.iterrows():
-        its = b.exterior.intersection(row.geometry)
-        if not isinstance(its, shapely.geometry.multilinestring.MultiLineString):
-            gaps.append(idx)
-
-    return _gaps.iloc[gaps]
+    return polygons.drop(poly_idx).reset_index(drop=True)
 
 
 def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
@@ -104,15 +100,13 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     """
     from collections import defaultdict
 
-    from shapely.ops import unary_union
-
     if gap_df is None:
         gap_df = gaps(gdf)
 
     if not inplace:
         gdf = gdf.copy()
 
-    if Version(geopandas.__version__) < Version("0.14.0"):
+    if not GPD_GE_014:
         gap_idx, gdf_idx = gdf.sindex.query_bulk(
             gap_df.geometry, predicate="intersects"
         )
@@ -132,7 +126,9 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     new_geom = []
     for k, v in to_merge.items():
         new_geom.append(
-            unary_union([gdf.geometry.iloc[k]] + [gap_df.geometry.iloc[i] for i in v])
+            shapely.union_all(
+                [gdf.geometry.iloc[k]] + [gap_df.geometry.iloc[i] for i in v]
+            )
         )
     gdf.loc[gdf.index.take(list(to_merge.keys())), gdf.geometry.name] = new_geom
 

@@ -5,7 +5,7 @@ import numpy
 from numpy.testing import assert_equal
 from shapely.geometry import Polygon, box
 
-from geoplanar.gap import fill_gaps, gaps
+from geoplanar import fill_gaps, gaps
 
 
 def setup():
@@ -38,6 +38,6 @@ def test_fill_gaps():
     p1 = box(0, 0, 10, 10)
     p2 = Polygon([(10, 10), (12, 8), (10, 6), (12, 4), (10, 2), (20, 5)])
     gdf = geopandas.GeoDataFrame(geometry=[p1, p2])
-    gaps_df = gaps(gdf).loc[[2]]
+    gaps_df = gaps(gdf).loc[[0]]
     filled = fill_gaps(gdf, gaps_df)
     assert_equal(filled.area, numpy.array([104, 32]))
