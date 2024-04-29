@@ -61,12 +61,14 @@ def planar_enforce(gdf):
     return geopandas.GeoDataFrame(geometry=geoms)
 
 
-def is_planar_enforced(gdf):
+def is_planar_enforced(gdf, allow_gaps=False):
     """Test if a geodataframe has any planar enforcement violations
 
     Parameters
     ----------
     gdf: GeoDataFrame with polygon geoseries for geometry
+    allow_gaps: boolean
+        If True, allow gaps in the polygonal coverage
 
     Returns
     -------
@@ -77,9 +79,10 @@ def is_planar_enforced(gdf):
         return False
     if non_planar_edges(gdf):
         return False
-    _gaps = gaps(gdf)
-    if _gaps.shape[0] > 0:
-        return False
+    if not allow_gaps:
+        _gaps = gaps(gdf)
+        if _gaps.shape[0] > 0:
+            return False
     return True
 
 
