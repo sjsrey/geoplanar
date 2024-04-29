@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-from collections import defaultdict
-
 import geopandas
-import libpysal
-from packaging.version import Version
+import numpy
+import pandas
+from libpysal.graph import Graph
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.ops import linemerge, polygonize, split
 
@@ -34,9 +33,8 @@ def non_planar_edges(gdf):
     Returns
     -------
 
-    missing : dictionary
-              key is origin feature, value is neighboring feature for each pair
-              of coincident nonplanar edges
+    missing : libpysal.graph.Graph
+        graph encoding nonplanar relationships between polygons
 
     Examples
     --------
@@ -45,34 +43,16 @@ def non_planar_edges(gdf):
     >>> c2 = [[10, 2], [10, 8], [20, 8], [20, 2], [10, 2]]
     >>> p2 = Polygon(c2)
     >>> gdf = geopandas.GeoDataFrame(geometry=[p1, p2])
-    >>> geoplanar.non_planar_edges(gdf)
-    defaultdict(set, {0: {1}})
+    >>> geoplanar.non_planar_edges(gdf).adjacency
+    focal  neighbor
+    0      0           0
+    1      1           0
+    Name: weight, dtype: int64
 
     """
-    if Version(libpysal.__version__) >= Version("4.8.0"):
-        w = libpysal.weights.Queen.from_dataframe(
-            gdf, use_index=False, silence_warnings=True
-        )
-    else:
-        w = libpysal.weights.Queen.from_dataframe(gdf, silence_warnings=True)
-
-    if Version(geopandas.__version__) >= Version("0.14.0"):
-        intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
-    else:
-        intersections = gdf.sindex.query_bulk(gdf.geometry, predicate="intersects").T
-    w1 = defaultdict(list)
-    for i, j in intersections:
-        if i != j:
-            w1[i].append(j)
-    missing = defaultdict(set)
-    for key in w.neighbors:
-        if set(w.neighbors[key]) != set(w1[key]):
-            for value in w1[key]:
-                pair = [key, value]
-                pair.sort()
-                left, right = pair
-                missing[left] = missing[left].union([right])
-    return missing
+    vertex_queen = Graph.build_contiguity(gdf, rook=False, strict=False)
+    strict_queen = Graph.build_contiguity(gdf, rook=False, strict=True)
+    return strict_queen.difference(vertex_queen)
 
 
 def planar_enforce(gdf):
@@ -132,19 +112,25 @@ def fix_npe_edges(gdf, inplace=False):
 
 
     """
+    # TODO: ensure any index can be used
+    assert pandas.RangeIndex(len(gdf)).equals(gdf.index)
 
     if not inplace:
         gdf = gdf.copy()
 
     edges = non_planar_edges(gdf)
-    for key in edges:
-        poly_a = gdf.iloc[key].geometry
-        for j in edges[key]:
-            poly_b = gdf.iloc[j].geometry
-            new_a, new_b = insert_intersections(poly_a, poly_b)
-            poly_a = new_a
-            gdf.loc[key, gdf.geometry.name] = new_a
-            gdf.loc[j, gdf.geometry.name] = new_b
+    unique_edges = edges.adjacency[
+        pandas.DataFrame(numpy.sort(edges.adjacency.index.to_frame(), axis=1))
+        .duplicated()
+        .values
+    ].index
+    for i, j in unique_edges:
+        poly_a = gdf.iloc[i].geometry
+        poly_b = gdf.iloc[j].geometry
+        new_a, new_b = insert_intersections(poly_a, poly_b)
+        poly_a = new_a
+        gdf.loc[i, gdf.geometry.name] = new_a
+        gdf.loc[j, gdf.geometry.name] = new_b
     return gdf
 
 
