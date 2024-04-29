@@ -6,6 +6,9 @@ from packaging.version import Version
 
 __all__ = ["gaps", "fill_gaps"]
 
+GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
+GPD_GE_100 = Version(geopandas.__version__) >= Version("1.0.0dev")
+
 
 def gaps(gdf):
     """Find gaps in a geodataframe.
@@ -38,7 +41,9 @@ def gaps(gdf):
 
     polygons = geopandas.GeoSeries(
         shapely.get_parts(
-            shapely.polygonize([shapely.union_all(gdf.boundary.values._data)])
+            shapely.polygonize(
+                [gdf.boundary.union_all() if GPD_GE_100 else gdf.boundary.unary_union]
+            )
         ),
         crs=gdf.crs,
     )
@@ -98,7 +103,7 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     if not inplace:
         gdf = gdf.copy()
 
-    if Version(geopandas.__version__) < Version("0.14.0"):
+    if not GPD_GE_014:
         gap_idx, gdf_idx = gdf.sindex.query_bulk(
             gap_df.geometry, predicate="intersects"
         )
