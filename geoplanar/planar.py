@@ -123,13 +123,13 @@ def fix_npe_edges(gdf, inplace=False):
 
     edges = non_planar_edges(gdf)
     unique_edges = edges.adjacency[
-        pandas.DataFrame(numpy.sort(edges.adjacency.index.to_frame(), axis=1))
+        ~pandas.DataFrame(numpy.sort(edges.adjacency.index.to_frame(), axis=1))
         .duplicated()
         .values
     ].index
     for i, j in unique_edges:
-        poly_a = gdf.iloc[i].geometry
-        poly_b = gdf.iloc[j].geometry
+        poly_a = gdf.geometry.iloc[i]
+        poly_b = gdf.geometry.iloc[j]
         new_a, new_b = insert_intersections(poly_a, poly_b)
         poly_a = new_a
         gdf.loc[i, gdf.geometry.name] = new_a
@@ -141,36 +141,9 @@ def insert_intersections(poly_a, poly_b):
     """Correct two npe intersecting polygons by inserting intersection points
     on intersecting edges
     """
-
     pint = poly_a.intersection(poly_b)
     if isinstance(pint, LineString):
-        pnts = pint
-        sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy, strict=False))]
-        new_polys = []
-        for poly in [poly_a, poly_b]:
-            if isinstance(poly, MultiPolygon):
-                new_parts = []
-                for part in poly.geoms:
-                    exterior = LineString(list(part.exterior.coords))
-                    for pnt in sp:
-                        splits = split(exterior, pnt)
-                        if len(splits.geoms) > 1:
-                            left, right = splits.geoms
-                            exterior = linemerge([left, right])
-                    new_parts.append(
-                        Polygon(list(zip(*exterior.coords.xy, strict=False)))
-                    )
-                new_polys.append(MultiPolygon(new_parts))
-            else:
-                exterior = LineString(list(poly.exterior.coords))
-                sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy, strict=False))]
-                for pnt in sp:
-                    splits = split(exterior, pnt)
-                    if len(splits.geoms) > 1:
-                        left, right = splits.geoms
-                        exterior = linemerge([left, right])
-                new_polys.append(Polygon(list(zip(*exterior.coords.xy, strict=False))))
-        return new_polys
+        return poly_a.union(pint), poly_b.union(pint)
     else:  # intersections are points
         new_polys = []
         for poly in [poly_a, poly_b]:
