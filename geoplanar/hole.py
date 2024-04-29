@@ -40,15 +40,13 @@ def missing_interiors(gdf):
     [(0, 1), (0, 2)]
     """
     if GPD_GE_014:
-        contained = gdf.geometry.sindex.query(gdf.geometry, predicate="contains")
+        i, j = gdf.geometry.sindex.query(gdf.geometry, predicate="contains")
     else:
-        contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
-    pairs = []
-    for pair in contained.T:
-        i, j = pair
-        if i != j:
-            pairs.append((i, j))
-    return pairs
+        i, j = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
+
+    mask = i != j
+
+    return list(zip(i[mask], j[mask], strict=True))
 
 
 def add_interiors(gdf, inplace=False):
