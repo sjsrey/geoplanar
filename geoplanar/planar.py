@@ -51,7 +51,7 @@ def non_planar_edges(gdf):
 
     """
     vertex_queen = Graph.build_contiguity(gdf, rook=False, strict=False)
-    strict_queen = Graph.build_contiguity(gdf, rook=False, strict=True)
+    strict_queen = Graph.build_fuzzy_contiguity(gdf)
     return strict_queen.difference(vertex_queen)
 
 
