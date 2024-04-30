@@ -38,6 +38,7 @@ include = [
 ]
 
 [tool.coverage.run]
+source = ['geoplanar']
 omit = ["geoplanar/tests/*"]
 
 [tool.ruff]
