@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-from collections import defaultdict
-
 import geopandas
-import libpysal
-from packaging.version import Version
-from shapely.geometry import LineString, MultiPolygon, Point, Polygon
+import numpy
+import pandas
+from libpysal.graph import Graph
+from shapely import (
+    GeometryCollection,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 from shapely.ops import linemerge, polygonize, split
 
 from .gap import gaps
@@ -34,9 +41,8 @@ def non_planar_edges(gdf):
     Returns
     -------
 
-    missing : dictionary
-              key is origin feature, value is neighboring feature for each pair
-              of coincident nonplanar edges
+    missing : libpysal.graph.Graph
+        graph encoding nonplanar relationships between polygons
 
     Examples
     --------
@@ -45,34 +51,16 @@ def non_planar_edges(gdf):
     >>> c2 = [[10, 2], [10, 8], [20, 8], [20, 2], [10, 2]]
     >>> p2 = Polygon(c2)
     >>> gdf = geopandas.GeoDataFrame(geometry=[p1, p2])
-    >>> geoplanar.non_planar_edges(gdf)
-    defaultdict(set, {0: {1}})
+    >>> geoplanar.non_planar_edges(gdf).adjacency
+    focal  neighbor
+    0      0           0
+    1      1           0
+    Name: weight, dtype: int64
 
     """
-    if Version(libpysal.__version__) >= Version("4.8.0"):
-        w = libpysal.weights.Queen.from_dataframe(
-            gdf, use_index=False, silence_warnings=True
-        )
-    else:
-        w = libpysal.weights.Queen.from_dataframe(gdf, silence_warnings=True)
-
-    if Version(geopandas.__version__) >= Version("0.14.0"):
-        intersections = gdf.sindex.query(gdf.geometry, predicate="intersects").T
-    else:
-        intersections = gdf.sindex.query_bulk(gdf.geometry, predicate="intersects").T
-    w1 = defaultdict(list)
-    for i, j in intersections:
-        if i != j:
-            w1[i].append(j)
-    missing = defaultdict(set)
-    for key in w.neighbors:
-        if set(w.neighbors[key]) != set(w1[key]):
-            for value in w1[key]:
-                pair = [key, value]
-                pair.sort()
-                left, right = pair
-                missing[left] = missing[left].union([right])
-    return missing
+    vertex_queen = Graph.build_contiguity(gdf, rook=False, strict=False)
+    strict_queen = Graph.build_fuzzy_contiguity(gdf)
+    return strict_queen.difference(vertex_queen)
 
 
 def planar_enforce(gdf):
@@ -81,12 +69,14 @@ def planar_enforce(gdf):
     return geopandas.GeoDataFrame(geometry=geoms)
 
 
-def is_planar_enforced(gdf):
+def is_planar_enforced(gdf, allow_gaps=False):
     """Test if a geodataframe has any planar enforcement violations
 
     Parameters
     ----------
     gdf: GeoDataFrame with polygon geoseries for geometry
+    allow_gaps: boolean
+        If True, allow gaps in the polygonal coverage
 
     Returns
     -------
@@ -97,9 +87,10 @@ def is_planar_enforced(gdf):
         return False
     if non_planar_edges(gdf):
         return False
-    _gaps = gaps(gdf)
-    if _gaps.shape[0] > 0:
-        return False
+    if not allow_gaps:
+        _gaps = gaps(gdf)
+        if _gaps.shape[0] > 0:
+            return False
     return True
 
 
@@ -132,19 +123,25 @@ def fix_npe_edges(gdf, inplace=False):
 
 
     """
+    # TODO: ensure any index can be used
+    assert pandas.RangeIndex(len(gdf)).equals(gdf.index)
 
     if not inplace:
         gdf = gdf.copy()
 
     edges = non_planar_edges(gdf)
-    for key in edges:
-        poly_a = gdf.iloc[key].geometry
-        for j in edges[key]:
-            poly_b = gdf.iloc[j].geometry
-            new_a, new_b = insert_intersections(poly_a, poly_b)
-            poly_a = new_a
-            gdf.loc[key, gdf.geometry.name] = new_a
-            gdf.loc[j, gdf.geometry.name] = new_b
+    unique_edges = edges.adjacency[
+        ~pandas.DataFrame(numpy.sort(edges.adjacency.index.to_frame(), axis=1))
+        .duplicated()
+        .values
+    ].index
+    for i, j in unique_edges:
+        poly_a = gdf.geometry.iloc[i]
+        poly_b = gdf.geometry.iloc[j]
+        new_a, new_b = insert_intersections(poly_a, poly_b)
+        poly_a = new_a
+        gdf.loc[i, gdf.geometry.name] = new_a
+        gdf.loc[j, gdf.geometry.name] = new_b
     return gdf
 
 
@@ -152,37 +149,17 @@ def insert_intersections(poly_a, poly_b):
     """Correct two npe intersecting polygons by inserting intersection points
     on intersecting edges
     """
-
+    overlapping_msg = (
+        "Polygons are overlapping. Fix overlaps before fixing nonplanar edges."
+    )
     pint = poly_a.intersection(poly_b)
-    if isinstance(pint, LineString):
-        pnts = pint
-        sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy, strict=False))]
-        new_polys = []
-        for poly in [poly_a, poly_b]:
-            if isinstance(poly, MultiPolygon):
-                new_parts = []
-                for part in poly.geoms:
-                    exterior = LineString(list(part.exterior.coords))
-                    for pnt in sp:
-                        splits = split(exterior, pnt)
-                        if len(splits.geoms) > 1:
-                            left, right = splits.geoms
-                            exterior = linemerge([left, right])
-                    new_parts.append(
-                        Polygon(list(zip(*exterior.coords.xy, strict=False)))
-                    )
-                new_polys.append(MultiPolygon(new_parts))
-            else:
-                exterior = LineString(list(poly.exterior.coords))
-                sp = [Point(pnt) for pnt in list(zip(*pnts.coords.xy, strict=False))]
-                for pnt in sp:
-                    splits = split(exterior, pnt)
-                    if len(splits.geoms) > 1:
-                        left, right = splits.geoms
-                        exterior = linemerge([left, right])
-                new_polys.append(Polygon(list(zip(*exterior.coords.xy, strict=False))))
-        return new_polys
-    else:  # intersections are points
+    if isinstance(pint, LineString | MultiLineString | GeometryCollection):
+        if isinstance(pint, GeometryCollection):
+            for geom in pint.geoms:
+                if isinstance(geom, Polygon | MultiPolygon):
+                    raise ValueError(overlapping_msg)
+        return poly_a.union(pint), poly_b.union(pint)
+    elif isinstance(pint, Point | MultiPoint):
         new_polys = []
         for poly in [poly_a, poly_b]:
             if isinstance(poly, MultiPolygon):
@@ -208,6 +185,8 @@ def insert_intersections(poly_a, poly_b):
                 else:
                     new_polys.append(poly)
         return new_polys
+    else:  # intersection is Polygon
+        raise ValueError(overlapping_msg)
 
 
 def self_intersecting_rings(gdf):

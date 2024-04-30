@@ -23,7 +23,7 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "geopandas",
-    "libpysal",
+    "libpysal >=4.8.0",
     "packaging",
 ]
 
