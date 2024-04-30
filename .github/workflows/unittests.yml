@@ -56,3 +56,5 @@ jobs:
           pytest -v --color yes --cov geoplanar --cov-append --cov-report term-missing --cov-report xml geoplanar
 
       - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
