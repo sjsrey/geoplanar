@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-
-from collections import defaultdict
-
 import geopandas
+from libpysal.graph import Graph
 from numpy.testing import assert_equal
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -25,7 +23,7 @@ def setup():
 
 def test_non_planar_edges():
     gdf = setup()
-    # res = geoplanar.non_planar_edges(gdf)
-    # assert_equal(res, defaultdict(set, {0: {1}}))
+    res = geoplanar.non_planar_edges(gdf)
+    assert res.equals(Graph.from_dicts({0: [1], 1: [0]}))
     gdf1 = geoplanar.fix_npe_edges(gdf)
     assert_equal(gdf1.geometry[0].wkt, "POLYGON ((0 0, 0 10, 10 10, 10 2, 10 0, 0 0))")
