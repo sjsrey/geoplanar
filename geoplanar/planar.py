@@ -3,7 +3,15 @@ import geopandas
 import numpy
 import pandas
 from libpysal.graph import Graph
-from shapely.geometry import LineString, MultiPolygon, Point, Polygon
+from shapely import (
+    GeometryCollection,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 from shapely.ops import linemerge, polygonize, split
 
 from .gap import gaps
@@ -141,10 +149,17 @@ def insert_intersections(poly_a, poly_b):
     """Correct two npe intersecting polygons by inserting intersection points
     on intersecting edges
     """
+    overlapping_msg = (
+        "Polygons are overlapping. Fix overlaps before fixing nonplanar edges."
+    )
     pint = poly_a.intersection(poly_b)
-    if isinstance(pint, LineString):
+    if isinstance(pint, LineString | MultiLineString | GeometryCollection):
+        if isinstance(pint, GeometryCollection):
+            for geom in pint.geoms:
+                if isinstance(geom, Polygon | MultiPolygon):
+                    raise ValueError(overlapping_msg)
         return poly_a.union(pint), poly_b.union(pint)
-    else:  # intersections are points
+    elif isinstance(pint, Point | MultiPoint):
         new_polys = []
         for poly in [poly_a, poly_b]:
             if isinstance(poly, MultiPolygon):
@@ -170,6 +185,8 @@ def insert_intersections(poly_a, poly_b):
                 else:
                     new_polys.append(poly)
         return new_polys
+    else:  # intersection is Polygon
+        raise ValueError(overlapping_msg)
 
 
 def self_intersecting_rings(gdf):
