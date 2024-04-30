@@ -31,9 +31,9 @@ jobs:
           - ci/312-dev.yaml
         include:
           - environment-file: ci/312-latest.yaml
-            os: macos-latest
+            os: macos-13 # Intel
           - environment-file: ci/312-latest.yaml
-            os: macos-14 # Apple Silicon
+            os: macos-latest # Apple Silicon
           - environment-file: ci/312-latest.yaml
             os: windows-latest
     defaults:
@@ -49,12 +49,10 @@ jobs:
           environment-file: ${{ matrix.environment-file }}
 
       - name: Install geoplanar
-        run: pip install . --no-deps --force-reinstall
+        run: pip install .
 
       - name: Test geoplanar
         run: |
-          pytest -v --color yes --cov geoplanar --cov-append --cov-report term-missing --cov-report xml geoplanar
+          pytest -v --color yes --cov geoplanar --cov-append --cov-report term-missing --cov-report xml .
 
       - uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
