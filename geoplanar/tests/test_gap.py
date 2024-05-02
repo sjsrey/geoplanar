@@ -5,7 +5,7 @@ import numpy
 from numpy.testing import assert_equal
 from shapely.geometry import Polygon, box
 
-from geoplanar import fill_gaps, gaps
+from geoplanar import fill_gaps, gaps, snap
 
 
 class TestGap:
@@ -36,3 +36,24 @@ class TestGap:
         gaps_df = gaps(self.gdf).loc[[0]]
         filled = fill_gaps(self.gdf, gaps_df)
         assert_equal(filled.area, numpy.array([104, 32]))
+
+
+class TestSnap:
+    def setup_method(self):
+        self.p1 = Polygon([[0, 0], [10,0], [10,10], [0,10]])
+        self.p2 = Polygon([(11, 0), (21,0), (21,20), (11,20)])
+        self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2])
+        self.gdf_crs = self.gdf.set_crs(3857)
+
+    def test_snap_below_threshold(self):
+        gdf1 = snap(self.gdf, 0.5)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 200.0]))
+
+    def test_snap_above_threshold(self):
+        gdf1 = snap(self.gdf, 1.1)
+        assert_equal(gdf1.area.values, numpy.array([110.0, 200.0]))
+
+    def test_snap_reverse_order(self):
+        gdf = geopandas.GeoDataFrame(geometry=[self.p2, self.p1])
+        gdf1 = snap(gdf, 1.1)
+        assert_equal(gdf1.area.values, numpy.array([210.0, 100.0]))
