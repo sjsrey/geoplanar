@@ -6,7 +6,7 @@ import geopandas
 import shapely
 from packaging.version import Version
 
-__all__ = ["gaps", "fill_gaps", "snap", "_snap"]
+__all__ = ["gaps", "fill_gaps", "snap"]
 
 GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 GPD_GE_100 = Version(geopandas.__version__) >= Version("1.0.0dev")
