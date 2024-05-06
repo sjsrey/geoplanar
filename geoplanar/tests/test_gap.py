@@ -4,7 +4,7 @@ import geopandas
 import numpy
 from numpy.testing import assert_equal
 from shapely.geometry import Polygon, box
-
+import pytest
 from geoplanar import fill_gaps, gaps, snap
 
 
@@ -37,7 +37,7 @@ class TestGap:
         filled = fill_gaps(self.gdf, gaps_df)
         assert_equal(filled.area, numpy.array([104, 32]))
 
-
+@pytest.mark.skipif(geopandas.__version__ != "1.0.0-alpha1", reason="requires geopandas alpha release")
 class TestSnap:
     def setup_method(self):
         self.p1 = Polygon([[0, 0], [10,0], [10,10], [0,10]])
