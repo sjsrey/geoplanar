@@ -5,7 +5,7 @@ import numpy
 from numpy.testing import assert_equal
 from shapely.geometry import box
 
-from geoplanar.overlap import is_overlapping, trim_overlaps
+from geoplanar.overlap import is_overlapping, trim_overlaps, merge_touching
 
 
 class TestOverlap:
@@ -33,3 +33,16 @@ class TestOverlap:
 
         gdf1 = trim_overlaps(self.gdf2)
         assert_equal(gdf1.area.values, numpy.array([96.0, 96.0, 8.0]))
+
+class TestTouching:
+    def setup_method(self):
+        self.p1 = box(0, 0, 1, 1)
+        self.p2 = box(1, 0, 11, 10)
+        self.p3 = box(15, 0, 25, 10)
+        self.p4 = box(0, 15, 1, 16)
+        self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2, self.p3, self.p4])
+        self.index = [0, 3]
+
+    def test_merge_touching(self):
+        gdf1 = merge_touching(self.gdf,self.index)
+        assert_equal(gdf1.area.values, numpy.array([101,100]))
