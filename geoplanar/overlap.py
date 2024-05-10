@@ -84,9 +84,9 @@ def is_overlapping(gdf):
 
 def merge_touching(gdf, index, largest=None):
     """Merge or remove polygons based on a set of conditions.
-    If polygon is not touching any other polygon, remove. If touching a neighbouring polygon, 
-    join to that polygon. If ``largest=None`` it picks one randomly, otherwise it picks the 
-    largest (True) or the smallest (False).
+    If polygon does not share any boundary with another polygon, remove. If it shares some boundary with
+    a neighbouring polygon, join to that polygon. If ``largest=None`` it picks one randomly, otherwise it 
+    picks the polygon with which it shares the largest (True) or the smallest (False) boundary.
 
 
     Parameters
@@ -96,7 +96,7 @@ def merge_touching(gdf, index, largest=None):
     index : list of indexes
         list of indexes of polygons in gdf to merge or remove
     largest : bool (default None)
-        Merge collapsed polygon with its largest (True), or smallest (False) neighbor.
+        Merge with the polygon with the largest (True) or smallest (False) shared boundary.
         If None, merge with any neighbor non-deterministically but performantly.
 
     Returns
