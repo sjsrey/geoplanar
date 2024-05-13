@@ -108,12 +108,12 @@ def merge_overlaps(gdf, merge_limit, overlap_limit):
     GeoDataFrame
     """
 
-    overlap_a, overlap_b = gdf.sindex.query(
-        gdf.geometry, predicate="overlaps"
-    )
-    contains_a, contains_b = gdf.sindex.query(
-        gdf.geometry, predicate="contains"
-    )
+    if GPD_GE_014:
+        overlap_a, overlap_b = gdf.sindex.query(gdf.geometry, predicate="overlaps")
+        contains_a, contains_b = gdf.sindex.query(gdf.geometry, predicate="contains")
+    else:
+        overlap_a, overlap_b = gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps")
+        contains_a, contains_b = gdf.sindex.query_bulk(gdf.geometry, predicate="contains")
 
     self_mask = contains_a != contains_b
     contains_a = contains_a[self_mask]
