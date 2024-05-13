@@ -107,8 +107,10 @@ def merge_touching(gdf, index, largest=None):
 
     merge_gdf = gdf.loc[index]
 
-    source, target = gdf.boundary.sindex.query(
-            merge_gdf.boundary, predicate="overlaps")
+    if GPD_GE_014:
+        source, target = gdf.boundary.sindex.query(merge_gdf.boundary, predicate="overlaps")
+    else:
+        source, target = gdf.boundary.sindex.query_bulk(merge_gdf.boundary, predicate="overlaps")
 
     source = merge_gdf.index[source]
     target = gdf.index[target]
