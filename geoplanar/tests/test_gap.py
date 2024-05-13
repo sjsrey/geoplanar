@@ -38,7 +38,7 @@ class TestGap:
         filled = fill_gaps(self.gdf, gaps_df)
         assert_equal(filled.area, numpy.array([104, 32]))
 
-@pytest.mark.skipif(Version(geopandas.__version__) >= Version("1.0.0dev"), reason="requires geopandas 1.0")
+@pytest.mark.skipif(Version(geopandas.__version__) < Version("1.0.0dev"), reason="requires geopandas 1.0")
 class TestSnap:
     def setup_method(self):
         self.p1 = Polygon([[0, 0], [10,0], [10,10], [0,10]])
