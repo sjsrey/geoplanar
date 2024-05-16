@@ -224,8 +224,8 @@ def snap(geometry, threshold=0.5):
         pairs_to_snap = nearby_not_overlap[~duplicated]
     
         new_geoms = []
-        previous_geom=0
-        snapped_geom=0
+        previous_geom=None
+        snapped_geom=None
         for geom, ref in zip(
             geometry.geometry.iloc[pairs_to_snap.get_level_values("source")],
             geometry.geometry.iloc[pairs_to_snap.get_level_values("target")],
