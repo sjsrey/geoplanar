@@ -44,7 +44,10 @@ class TestSnap:
         self.p1 = Polygon([[0, 0], [10,0], [10,10], [0,10]])
         self.p2 = Polygon([(11, 0), (21,0), (21,20), (11,20)])
         self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2])
-        self.gdf_crs = self.gdf.set_crs(3857)
+
+        self.p3 = Polygon( [[0, 0], [10,0], [13,13], [3,10] ] )
+        self.p4 = Polygon( [(10.7, 2), (23,10), (15,20)] )
+        self.p5 = Polygon( [(10.7, 1.5), (23,9), (10.3,0)] )
 
     def test_snap_below_threshold(self):
         gdf1 = snap(self.gdf, 0.5)
@@ -58,3 +61,13 @@ class TestSnap:
         gdf = geopandas.GeoDataFrame(geometry=[self.p2, self.p1])
         gdf1 = snap(gdf, 1.1)
         assert_equal(gdf1.area.values, numpy.array([210.0, 100.0]))
+
+    def test_snap_complex_shapes(self):
+        gdf = geopandas.GeoDataFrame(geometry=[self.p3, self.p4])
+        gdf1 = snap(gdf, 0.5)
+        assert_equal(numpy.round(gdf1.area.values, decimals=1), numpy.array([113.6, 93.5]))
+
+    def test_snap_3shapes(self):
+        gdf = geopandas.GeoDataFrame(geometry=[self.p3, self.p4, self.p5])
+        gdf1 = snap(gdf, 1)
+        assert_equal(numpy.round(gdf1.area.values, decimals=1), numpy.array([114.1, 102.3, 7.7]))

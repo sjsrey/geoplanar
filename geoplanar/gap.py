@@ -177,7 +177,6 @@ def _snap(geometry, reference, threshold, segment_length):
     # to remove any extra vertices
     return shapely.simplify(shapely.Polygon(coords, holes=holes), segment_length / 100)
 
-
 def snap(geometry, threshold=0.5):
     """Snap geometries that are within threshold to each other
 
@@ -190,6 +189,7 @@ def snap(geometry, threshold=0.5):
         geometries to snap. Geometry type needs to be Polygon for all of them.
     threshold : float, optional
         max distance between geometries to snap, by default 0.5
+        threshold should be ~10% larger than the distance between polygon edges to ensure snapping
 
     Returns
     -------
@@ -224,13 +224,21 @@ def snap(geometry, threshold=0.5):
         pairs_to_snap = nearby_not_overlap[~duplicated]
     
         new_geoms = []
+        previous_geom=0
+        snapped_geom=0
         for geom, ref in zip(
             geometry.geometry.iloc[pairs_to_snap.get_level_values("source")],
             geometry.geometry.iloc[pairs_to_snap.get_level_values("target")],
         ):
-            new_geoms.append(
-                _snap(geom, ref, threshold=threshold, segment_length=threshold)
-            )
+
+            if previous_geom == geom:
+                new_geoms.append(
+                    _snap(snapped_geom, ref, threshold=threshold, segment_length=threshold)
+                )
+            else:
+                snapped_geom = _snap(geom, ref, threshold=threshold, segment_length=threshold)
+                new_geoms.append(snapped_geom)
+                previous_geom = geom
 
         snapped = geometry.geometry.copy()
         snapped.iloc[pairs_to_snap.get_level_values("source")] = new_geoms
