@@ -27,8 +27,15 @@ class TestOverlap:
         gdf1 = trim_overlaps(self.gdf, largest=False)
         assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
 
+    def test_trim_overlaps_smallest(self):
+        gdf1 = trim_overlaps(self.gdf, largest=None)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
+
     def test_trim_overlaps_multiple(self):
         gdf1 = trim_overlaps(self.gdf2, largest=False)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 100.0, 0.0]))
+
+        gdf1 = trim_overlaps(self.gdf2, largest=None)
         assert_equal(gdf1.area.values, numpy.array([100.0, 100.0, 0.0]))
 
         gdf1 = trim_overlaps(self.gdf2)
