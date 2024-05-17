@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 #
+import pandas as pd
+import numpy as np
 import geopandas
 import shapely
 from packaging.version import Version
 
-__all__ = ["gaps", "fill_gaps"]
+__all__ = ["gaps", "fill_gaps", "snap"]
 
 GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 GPD_GE_100 = Version(geopandas.__version__) >= Version("1.0.0dev")
@@ -133,3 +135,122 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     gdf.loc[gdf.index.take(list(to_merge.keys())), gdf.geometry.name] = new_geom
 
     return gdf
+
+
+def _snap(geometry, reference, threshold, segment_length):
+    """Snap g1 to g2 within threshold
+
+    Parameters
+    ----------
+    geometry : shapely.Polygon
+        geometry to snap
+    reference : shapely.Polygon
+        geometry to snap to
+    threshold : float
+        max distance between vertices to snap
+    segment_length : float
+        max segment length parameter in segmentize
+
+    Returns
+    -------
+    shapely.Polygon
+        snapped geometry
+    """
+
+    # extract the shell and holes from the first geometry
+    shell, holes = geometry.exterior, geometry.interiors
+    # segmentize the shell and extract coordinates
+    coords = shapely.get_coordinates(shapely.segmentize(shell, segment_length))
+    # create a point geometry from the coordinates
+    points = shapely.points(coords)
+    # find the shortest line between the points and the second geometry
+    lines = shapely.shortest_line(points, reference)
+    # mask the coordinates where the distance is less than the threshold
+    distance_mask = shapely.length(lines) < threshold
+
+    # return the original geometry if no coordinates are within the threshold
+    if not any(distance_mask):
+        return geometry
+
+    # update the coordinates with the snapped coordinates
+    coords[distance_mask] = shapely.get_coordinates(lines)[1::2][distance_mask]
+    # re-create the polygon with new coordinates and original holes and simplify
+    # to remove any extra vertices
+    return shapely.simplify(shapely.Polygon(coords, holes=holes), segment_length / 100)
+
+
+def snap(geometry, threshold):
+    """Snap geometries that are within threshold to each other
+
+    Only one of the pair of geometries identified as nearby will be snapped,
+    the one with the lower index.
+
+    Parameters
+    ----------
+    geometry : GeoDataFrame | GeoSeries
+        geometries to snap. Geometry type needs to be Polygon for all of them.
+    threshold : float
+        max distance between geometries to snap
+        threshold should be ~10% larger than the distance between polygon edges to
+        ensure snapping
+
+    Returns
+    -------
+    GeoSeries
+        GeoSeries with snapped geometries
+    """
+    if not GPD_GE_100:
+        raise ImportError("geopandas 1.0.0 or higher is required.")
+
+    nearby_a, nearby_b = geometry.sindex.query(
+        geometry.geometry, predicate="dwithin", distance=threshold
+    )
+    overlap_a, overlap_b = geometry.boundary.sindex.query(
+        geometry.boundary, predicate="overlaps"
+    )
+
+    self_mask = nearby_a != nearby_b
+    nearby_a = nearby_a[self_mask]
+    nearby_b = nearby_b[self_mask]
+
+    self_mask = overlap_a != overlap_b
+    overlap_a = overlap_a[self_mask]
+    overlap_b = overlap_b[self_mask]
+
+    nearby = pd.MultiIndex.from_arrays([nearby_a, nearby_b], names=("source", "target"))
+    overlap = pd.MultiIndex.from_arrays(
+        [overlap_a, overlap_b], names=("source", "target")
+    )
+    nearby_not_overlap = nearby.difference(overlap)
+    if not nearby_not_overlap.empty:
+        duplicated = pd.DataFrame(
+            np.sort(np.array(nearby_not_overlap.to_list()), axis=1)
+        ).duplicated()
+        pairs_to_snap = nearby_not_overlap[~duplicated]
+
+        new_geoms = []
+        previous_geom = None
+        snapped_geom = None
+        for geom, ref in zip(
+            geometry.geometry.iloc[pairs_to_snap.get_level_values("source")],
+            geometry.geometry.iloc[pairs_to_snap.get_level_values("target")],
+            strict=True,
+        ):
+            if previous_geom == geom:
+                new_geoms.append(
+                    _snap(
+                        snapped_geom, ref, threshold=threshold, segment_length=threshold
+                    )
+                )
+            else:
+                snapped_geom = _snap(
+                    geom, ref, threshold=threshold, segment_length=threshold
+                )
+                new_geoms.append(snapped_geom)
+                previous_geom = geom
+
+        snapped = geometry.geometry.copy()
+        snapped.iloc[pairs_to_snap.get_level_values("source")] = new_geoms
+    else:
+        snapped = geometry.geometry.copy()
+    return snapped
