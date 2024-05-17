@@ -21,9 +21,9 @@ def trim_overlaps(gdf, largest=True, inplace=False):
 
     Note
     ----
-    Under certain instances, polygons may turn into multipolygons.
-    This is expected due to the underlying topology of the polygons and may
-    require further treatment.
+    Under certain circumstances, the output may result in MultiPolygons. This is typically
+    a result of a complex relationship between geometries and is expected. Just note, 
+    that it may require further treatment if simple Polygons are needed.
 
     Parameters
     ----------
