@@ -136,6 +136,7 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
 
     return gdf
 
+
 def _snap(geometry, reference, threshold, segment_length):
     """Snap g1 to g2 within threshold
 
@@ -177,7 +178,8 @@ def _snap(geometry, reference, threshold, segment_length):
     # to remove any extra vertices
     return shapely.simplify(shapely.Polygon(coords, holes=holes), segment_length / 100)
 
-def snap(geometry, threshold=0.5):
+
+def snap(geometry, threshold):
     """Snap geometries that are within threshold to each other
 
     Only one of the pair of geometries identified as nearby will be snapped,
@@ -187,16 +189,19 @@ def snap(geometry, threshold=0.5):
     ----------
     geometry : GeoDataFrame | GeoSeries
         geometries to snap. Geometry type needs to be Polygon for all of them.
-    threshold : float, optional
-        max distance between geometries to snap, by default 0.5
-        threshold should be ~10% larger than the distance between polygon edges to ensure snapping
+    threshold : float
+        max distance between geometries to snap
+        threshold should be ~10% larger than the distance between polygon edges to
+        ensure snapping
 
     Returns
     -------
     GeoSeries
         GeoSeries with snapped geometries
     """
-    
+    if not GPD_GE_100:
+        raise ImportError("geopandas 1.0.0 or higher is required.")
+
     nearby_a, nearby_b = geometry.sindex.query(
         geometry.geometry, predicate="dwithin", distance=threshold
     )
@@ -217,26 +222,30 @@ def snap(geometry, threshold=0.5):
         [overlap_a, overlap_b], names=("source", "target")
     )
     nearby_not_overlap = nearby.difference(overlap)
-    if nearby_not_overlap.empty == False:
+    if not nearby_not_overlap.empty:
         duplicated = pd.DataFrame(
             np.sort(np.array(nearby_not_overlap.to_list()), axis=1)
         ).duplicated()
         pairs_to_snap = nearby_not_overlap[~duplicated]
-    
+
         new_geoms = []
-        previous_geom=None
-        snapped_geom=None
+        previous_geom = None
+        snapped_geom = None
         for geom, ref in zip(
             geometry.geometry.iloc[pairs_to_snap.get_level_values("source")],
             geometry.geometry.iloc[pairs_to_snap.get_level_values("target")],
+            strict=True,
         ):
-
             if previous_geom == geom:
                 new_geoms.append(
-                    _snap(snapped_geom, ref, threshold=threshold, segment_length=threshold)
+                    _snap(
+                        snapped_geom, ref, threshold=threshold, segment_length=threshold
+                    )
                 )
             else:
-                snapped_geom = _snap(geom, ref, threshold=threshold, segment_length=threshold)
+                snapped_geom = _snap(
+                    geom, ref, threshold=threshold, segment_length=threshold
+                )
                 new_geoms.append(snapped_geom)
                 previous_geom = geom
 
