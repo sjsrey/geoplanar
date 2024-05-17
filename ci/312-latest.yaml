@@ -4,8 +4,10 @@ channels:
 dependencies:
   - python=3.12
   - libpysal
-  - geopandas
   - packaging
   - pytest
   - pytest-cov
   - codecov
+  - pip
+  - pip:
+      - geopandas==1.0.0a1
