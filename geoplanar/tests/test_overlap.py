@@ -56,9 +56,19 @@ class TestTouching:
         self.p2 = box(1, 0, 11, 10)
         self.p3 = box(15, 0, 25, 10)
         self.p4 = box(0, 15, 1, 16)
-        self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2, self.p3, self.p4])
+        self.p5 = box(0.5, 1, 1, 8)
+        self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2, self.p3, self.p4, self.p5])
         self.index = [0, 3]
 
-    def test_merge_touching(self):
-        gdf1 = merge_touching(self.gdf,self.index)
-        assert_equal(gdf1.area.values, numpy.array([101,100]))
+    def test_merge_touching_largest(self):
+        gdf1 = merge_touching(self.gdf,self.index,largest=True)
+        assert_equal(gdf1.area.values, numpy.array([101,100,3.5]))
+    
+    def test_merge_touching_smallest(self):
+        gdf2 = merge_touching(self.gdf,self.index,largest=False)
+        assert_equal(gdf2.area.values, numpy.array([4.5,100,100]))
+
+    def test_merge_touching_none(self):
+        gdf3 = merge_touching(self.gdf,self.index,largest=None)
+        assert_equal(gdf3.area.values, numpy.array([4.5,100,100]))
+
