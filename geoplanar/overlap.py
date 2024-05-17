@@ -22,15 +22,21 @@ def overlaps(gdf):
 def trim_overlaps(gdf, largest=True, inplace=False):
     """Trim overlapping polygons
 
+    Note
+    ----
+    Under certain circumstances, the output may result in MultiPolygons. This is typically
+    a result of a complex relationship between geometries and is expected. Just note, 
+    that it may require further treatment if simple Polygons are needed.
 
     Parameters
     ----------
 
     gdf:  geodataframe with polygon geometries
 
-    largest: boolean
-             True: trim the larger of the pair of overlapping polygons,
-             False: trim the smaller polygon.
+    largest: boolean (Default: True)
+            True: trim the larger of the pair of overlapping polygons,
+            False: trim the smaller polygon.
+            If None, trim either polygon non-deterministically but performantly.
 
     Returns
     -------
@@ -45,7 +51,14 @@ def trim_overlaps(gdf, largest=True, inplace=False):
 
     if not inplace:
         gdf = gdf.copy()
-    if largest:
+    if largest == None: # don't care which polygon to trim
+        for i, j in intersections:
+            if i != j:
+                left = gdf.geometry[i]
+                right = gdf.geometry[j]
+                right = gdf.geometry[j].difference(gdf.geometry[i])
+                gdf.loc[j, gdf.geometry.name] = right
+    elif largest:
         for i, j in intersections:
             if i != j:
                 left = gdf.geometry[i]
@@ -67,7 +80,6 @@ def trim_overlaps(gdf, largest=True, inplace=False):
                 else:
                     left = gdf.geometry[i].difference(gdf.geometry[j])
                     gdf.loc[i, gdf.geometry.name] = left
-
     return gdf
 
 
