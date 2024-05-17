@@ -82,7 +82,7 @@ def is_overlapping(gdf):
         return True
     return False
   
-  def merge_overlaps(gdf, merge_limit, overlap_limit):
+def merge_overlaps(gdf, merge_limit, overlap_limit):
     """Merge overlapping polygons based on a set of conditions.
 
     Overlapping polygons smaller than ``merge_limit`` are merged to a neighboring polygon.
