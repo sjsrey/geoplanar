@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #
-import pandas as pd
-import numpy as np
 import geopandas
+import numpy as np
+import pandas as pd
 import shapely
 from packaging.version import Version
 
