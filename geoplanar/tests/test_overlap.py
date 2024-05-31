@@ -20,20 +20,31 @@ class TestOverlap:
         self.p3 = box(10, 0, 20, 10)
         self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2])
         self.gdf2 = geopandas.GeoDataFrame(geometry=[self.p1, self.p3, self.p2])
+        self.gdf_str = self.gdf.set_index(numpy.array(["foo", "bar"]))
 
     def test_is_overlapping(self):
         assert is_overlapping(self.gdf)
+        assert is_overlapping(self.gdf_str)
 
     def test_trim_overlaps(self):
         gdf1 = trim_overlaps(self.gdf)
+        assert_equal(gdf1.area.values, numpy.array([96.0, 8.0]))
+
+        gdf1 = trim_overlaps(self.gdf_str)
         assert_equal(gdf1.area.values, numpy.array([96.0, 8.0]))
 
     def test_trim_overlaps_smallest(self):
         gdf1 = trim_overlaps(self.gdf, largest=False)
         assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
 
+        gdf1 = trim_overlaps(self.gdf_str, largest=False)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
+
     def test_trim_overlaps_random(self):
         gdf1 = trim_overlaps(self.gdf, largest=None)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
+
+        gdf1 = trim_overlaps(self.gdf_str, largest=None)
         assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
 
     def test_trim_overlaps_multiple(self):
@@ -59,6 +70,9 @@ class TestOverlap:
         gdf1 = merge_overlaps(self.gdf, 1, 1)
         assert_equal(gdf1.area.values, numpy.array([100, 8]))
 
+        gdf1 = merge_overlaps(self.gdf_str, 10, 0)
+        assert_equal(gdf1.area.values, numpy.array([104]))
+
     def test_merge_overlaps_multiple(self):
         gdf1 = merge_overlaps(self.gdf2, 10, 0)
         assert_equal(gdf1.area.values, numpy.array([200]))
@@ -75,15 +89,28 @@ class TestTouching:
             geometry=[self.p1, self.p2, self.p3, self.p4, self.p5]
         )
         self.index = [0, 3]
+        self.gdf_str = self.gdf.set_index(
+            numpy.array(["foo", "bar", "baz", "qux", "quux"])
+        )
+        self.index_str = ["foo", "qux"]
 
     def test_merge_touching_largest(self):
         gdf1 = merge_touching(self.gdf, self.index, largest=True)
+        assert_equal(gdf1.area.values, numpy.array([101, 100, 3.5]))
+
+        gdf1 = merge_touching(self.gdf_str, self.index_str, largest=True)
         assert_equal(gdf1.area.values, numpy.array([101, 100, 3.5]))
 
     def test_merge_touching_smallest(self):
         gdf2 = merge_touching(self.gdf, self.index, largest=False)
         assert_equal(gdf2.area.values, numpy.array([4.5, 100, 100]))
 
+        gdf2 = merge_touching(self.gdf_str, self.index_str, largest=False)
+        assert_equal(gdf2.area.values, numpy.array([4.5, 100, 100]))
+
     def test_merge_touching_none(self):
         gdf3 = merge_touching(self.gdf, self.index, largest=None)
+        assert_equal(gdf3.area.values, numpy.array([4.5, 100, 100]))
+
+        gdf3 = merge_touching(self.gdf_str, self.index_str, largest=None)
         assert_equal(gdf3.area.values, numpy.array([4.5, 100, 100]))

@@ -123,9 +123,6 @@ def fix_npe_edges(gdf, inplace=False):
 
 
     """
-    # TODO: ensure any index can be used
-    assert pandas.RangeIndex(len(gdf)).equals(gdf.index)
-
     if not inplace:
         gdf = gdf.copy()
 
@@ -136,8 +133,8 @@ def fix_npe_edges(gdf, inplace=False):
         .values
     ].index
     for i, j in unique_edges:
-        poly_a = gdf.geometry.iloc[i]
-        poly_b = gdf.geometry.iloc[j]
+        poly_a = gdf.geometry.loc[i]
+        poly_b = gdf.geometry.loc[j]
         new_a, new_b = insert_intersections(poly_a, poly_b)
         poly_a = new_a
         gdf.loc[i, gdf.geometry.name] = new_a

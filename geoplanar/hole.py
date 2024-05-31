@@ -94,20 +94,22 @@ def add_interiors(gdf, inplace=False):
     1     4.0
     2     4.0
     """
-    # TODO: ensure any index can be used
-    assert pd.RangeIndex(len(gdf)).equals(gdf.index)
-
     if not inplace:
         gdf = gdf.copy()
+
+    geom_col_idx = gdf.columns.get_loc(gdf.geometry.name)
 
     if GPD_GE_014:
         contained = gdf.geometry.sindex.query(gdf.geometry, predicate="contains")
     else:
         contained = gdf.geometry.sindex.query_bulk(gdf.geometry, predicate="contains")
     k = contained.shape[1]
+
     if k > gdf.shape[0]:
         to_add = contained[:, contained[0] != contained[1]].T
         for add in to_add:
             i, j = add
-            gdf.loc[i, gdf.geometry.name] = gdf.geometry[i].difference(gdf.geometry[j])
+            gdf.iloc[i, geom_col_idx] = gdf.geometry.iloc[i].difference(
+                gdf.geometry.iloc[j]
+            )
     return gdf

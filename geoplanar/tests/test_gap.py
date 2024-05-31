@@ -16,6 +16,7 @@ class TestGap:
         self.p2 = Polygon([(10, 10), (12, 8), (10, 6), (12, 4), (10, 2), (20, 5)])
         self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2])
         self.gdf_crs = self.gdf.set_crs(3857)
+        self.gdf_str = self.gdf_crs.set_index(numpy.array(["foo", "bar"]))
 
     def test_gaps(self):
         h = gaps(self.gdf_crs)
@@ -26,17 +27,29 @@ class TestGap:
         gdf1 = fill_gaps(self.gdf)
         assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
 
+        gdf1 = fill_gaps(self.gdf_str)
+        assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
+
     def test_fill_gaps_smallest(self):
         gdf1 = fill_gaps(self.gdf, largest=False)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 40.0]))
+
+        gdf1 = fill_gaps(self.gdf_str, largest=False)
         assert_equal(gdf1.area.values, numpy.array([100.0, 40.0]))
 
     def test_fill_gaps_none(self):
         gdf1 = fill_gaps(self.gdf, largest=None)
         assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
 
+        gdf1 = fill_gaps(self.gdf_str, largest=None)
+        assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
+
     def test_fill_gaps_gaps_df(self):
         gaps_df = gaps(self.gdf).loc[[0]]
         filled = fill_gaps(self.gdf, gaps_df)
+        assert_equal(filled.area, numpy.array([104, 32]))
+
+        filled = fill_gaps(self.gdf_str, gaps_df)
         assert_equal(filled.area, numpy.array([104, 32]))
 
 
@@ -49,6 +62,7 @@ class TestSnap:
         self.p1 = Polygon([[0, 0], [10, 0], [10, 10], [0, 10]])
         self.p2 = Polygon([(11, 0), (21, 0), (21, 20), (11, 20)])
         self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2])
+        self.gdf_str = self.gdf.set_index(numpy.array(["foo", "bar"]))
 
         self.p3 = Polygon([[0, 0], [10, 0], [13, 13], [3, 10]])
         self.p4 = Polygon([(10.7, 2), (23, 10), (15, 20)])
@@ -58,8 +72,14 @@ class TestSnap:
         gdf1 = snap(self.gdf, 0.5)
         assert_equal(gdf1.area.values, numpy.array([100.0, 200.0]))
 
+        gdf1 = snap(self.gdf_str, 0.5)
+        assert_equal(gdf1.area.values, numpy.array([100.0, 200.0]))
+
     def test_snap_above_threshold(self):
         gdf1 = snap(self.gdf, 1.1)
+        assert_equal(gdf1.area.values, numpy.array([110.0, 200.0]))
+
+        gdf1 = snap(self.gdf_str, 1.1)
         assert_equal(gdf1.area.values, numpy.array([110.0, 200.0]))
 
     def test_snap_reverse_order(self):

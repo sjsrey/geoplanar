@@ -119,7 +119,7 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     for g_ix in range(len(gap_df)):
         neighbors = gdf_idx[gap_idx == g_ix]
         if largest is None:  # don't care which polygon is a gap attached to
-            to_merge[neighbors[0]].add(g_ix)
+            to_merge[gdf.index[neighbors[0]]].add(g_ix)
         elif largest:
             to_merge[gdf.iloc[neighbors].area.idxmax()].add(g_ix)
         else:
@@ -129,10 +129,10 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     for k, v in to_merge.items():
         new_geom.append(
             shapely.union_all(
-                [gdf.geometry.iloc[k]] + [gap_df.geometry.iloc[i] for i in v]
+                [gdf.geometry.loc[k]] + [gap_df.geometry.iloc[i] for i in v]
             )
         )
-    gdf.loc[gdf.index.take(list(to_merge.keys())), gdf.geometry.name] = new_geom
+    gdf.loc[list(to_merge.keys()), gdf.geometry.name] = new_geom
 
     return gdf
 
