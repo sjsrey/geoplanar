@@ -32,5 +32,5 @@ class TestPlanar:
         assert res.equals(Graph.from_dicts({"foo": ["bar"], "bar": ["foo"]}))
         gdf1 = geoplanar.fix_npe_edges(self.gdf_str)
         assert_equal(
-            gdf1.geometry[0].wkt, "POLYGON ((0 0, 0 10, 10 10, 10 2, 10 0, 0 0))"
+            gdf1.geometry.iloc[0].wkt, "POLYGON ((0 0, 0 10, 10 10, 10 2, 10 0, 0 0))"
         )
