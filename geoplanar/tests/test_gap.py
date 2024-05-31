@@ -2,11 +2,12 @@
 
 import geopandas
 import numpy
-from numpy.testing import assert_equal
-from shapely.geometry import Polygon, box
 import pytest
-from geoplanar import fill_gaps, gaps, snap
+from numpy.testing import assert_equal
 from packaging.version import Version
+from shapely.geometry import Polygon, box
+
+from geoplanar import fill_gaps, gaps, snap
 
 
 class TestGap:
@@ -38,16 +39,20 @@ class TestGap:
         filled = fill_gaps(self.gdf, gaps_df)
         assert_equal(filled.area, numpy.array([104, 32]))
 
-@pytest.mark.skipif(Version(geopandas.__version__) < Version("1.0.0dev"), reason="requires geopandas 1.0")
+
+@pytest.mark.skipif(
+    Version(geopandas.__version__) < Version("1.0.0dev"),
+    reason="requires geopandas 1.0",
+)
 class TestSnap:
     def setup_method(self):
-        self.p1 = Polygon([[0, 0], [10,0], [10,10], [0,10]])
-        self.p2 = Polygon([(11, 0), (21,0), (21,20), (11,20)])
+        self.p1 = Polygon([[0, 0], [10, 0], [10, 10], [0, 10]])
+        self.p2 = Polygon([(11, 0), (21, 0), (21, 20), (11, 20)])
         self.gdf = geopandas.GeoDataFrame(geometry=[self.p1, self.p2])
 
-        self.p3 = Polygon( [[0, 0], [10,0], [13,13], [3,10] ] )
-        self.p4 = Polygon( [(10.7, 2), (23,10), (15,20)] )
-        self.p5 = Polygon( [(10.7, 1.5), (23,9), (10.3,0)] )
+        self.p3 = Polygon([[0, 0], [10, 0], [13, 13], [3, 10]])
+        self.p4 = Polygon([(10.7, 2), (23, 10), (15, 20)])
+        self.p5 = Polygon([(10.7, 1.5), (23, 9), (10.3, 0)])
 
     def test_snap_below_threshold(self):
         gdf1 = snap(self.gdf, 0.5)
@@ -65,9 +70,13 @@ class TestSnap:
     def test_snap_complex_shapes(self):
         gdf = geopandas.GeoDataFrame(geometry=[self.p3, self.p4])
         gdf1 = snap(gdf, 0.5)
-        assert_equal(numpy.round(gdf1.area.values, decimals=1), numpy.array([113.6, 93.5]))
+        assert_equal(
+            numpy.round(gdf1.area.values, decimals=1), numpy.array([113.6, 93.5])
+        )
 
     def test_snap_3shapes(self):
         gdf = geopandas.GeoDataFrame(geometry=[self.p3, self.p4, self.p5])
         gdf1 = snap(gdf, 1)
-        assert_equal(numpy.round(gdf1.area.values, decimals=1), numpy.array([114.1, 102.3, 7.7]))
+        assert_equal(
+            numpy.round(gdf1.area.values, decimals=1), numpy.array([114.1, 102.3, 7.7])
+        )
