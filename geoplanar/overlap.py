@@ -58,35 +58,38 @@ def trim_overlaps(gdf, largest=True, inplace=False):
 
     if not inplace:
         gdf = gdf.copy()
+
+    geom_col_idx = gdf.columns.get_loc(gdf.geometry.name)
+
     if largest is None:  # don't care which polygon to trim
         for i, j in intersections:
             if i != j:
-                left = gdf.geometry[i]
-                right = gdf.geometry[j]
-                right = gdf.geometry[j].difference(gdf.geometry[i])
-                gdf.loc[j, gdf.geometry.name] = right
+                left = gdf.geometry.iloc[i]
+                right = gdf.geometry.iloc[j]
+                right = gdf.geometry.iloc[j].difference(gdf.geometry.iloc[i])
+                gdf.iloc[j, geom_col_idx] = right
     elif largest:
         for i, j in intersections:
             if i != j:
-                left = gdf.geometry[i]
-                right = gdf.geometry[j]
+                left = gdf.geometry.iloc[i]
+                right = gdf.geometry.iloc[j]
                 if left.area < right.area:
-                    right = gdf.geometry[j].difference(gdf.geometry[i])
-                    gdf.loc[j, gdf.geometry.name] = right
+                    right = gdf.geometry.iloc[j].difference(gdf.geometry.iloc[i])
+                    gdf.iloc[j, geom_col_idx] = right
                 else:
-                    left = gdf.geometry[i].difference(gdf.geometry[j])
-                    gdf.loc[i, gdf.geometry.name] = left
+                    left = gdf.geometry.iloc[i].difference(gdf.geometry.iloc[j])
+                    gdf.iloc[i, geom_col_idx] = left
     else:
         for i, j in intersections:
             if i != j:
-                left = gdf.geometry[i]
-                right = gdf.geometry[j]
+                left = gdf.geometry.iloc[i]
+                right = gdf.geometry.iloc[j]
                 if left.area > right.area:
-                    right = gdf.geometry[j].difference(gdf.geometry[i])
-                    gdf.loc[j, gdf.geometry.name] = right
+                    right = gdf.geometry.iloc[j].difference(gdf.geometry.iloc[i])
+                    gdf.iloc[j, geom_col_idx] = right
                 else:
-                    left = gdf.geometry[i].difference(gdf.geometry[j])
-                    gdf.loc[i, gdf.geometry.name] = left
+                    left = gdf.geometry.iloc[i].difference(gdf.geometry.iloc[j])
+                    gdf.iloc[i, geom_col_idx] = left
     return gdf
 
 
@@ -111,6 +114,10 @@ def merge_overlaps(gdf, merge_limit, overlap_limit):
 
     Polygons larger than ``merge_limit`` are merged to neighboring if they share area
     larger than ``area * overlap_limit``.
+
+    Notes
+    -----
+    The original index is not preserved.
 
     Parameters
     ----------
@@ -145,8 +152,8 @@ def merge_overlaps(gdf, merge_limit, overlap_limit):
     overlap_a = overlap_a[self_mask]
     overlap_b = overlap_b[self_mask]
 
-    source = np.concatenate([overlap_a, contains_a])
-    target = np.concatenate([overlap_b, contains_b])
+    source = gdf.index[np.concatenate([overlap_a, contains_a])]
+    target = gdf.index[np.concatenate([overlap_b, contains_b])]
 
     neighbors = defaultdict(list)
     for key, value in zip(source, target, strict=False):
@@ -159,14 +166,14 @@ def merge_overlaps(gdf, merge_limit, overlap_limit):
             if poly.area < merge_limit:
                 neighbors_final[i] = neighbors[i]
             else:
-                sub = gdf.geometry.iloc[neighbors[i]]
+                sub = gdf.geometry.loc[neighbors[i]]
                 inters = sub.intersection(poly)
                 include = sub.index[inters.area > (sub.area * overlap_limit)]
                 neighbors_final[i] = list(include)
         else:
             neighbors_final[i] = []
 
-    w = libpysal.weights.W(neighbors_final, silence_warnings=True)
+    w = libpysal.graph.Graph.from_dicts(neighbors_final)
     return gdf.dissolve(w.component_labels)
 
 
@@ -177,6 +184,10 @@ def merge_touching(gdf, index, largest=None):
     some boundary with a neighbouring polygon, join to that polygon. If ``largest=None``
     it picks one randomly, otherwise it picks the polygon with which it shares the
     largest (True) or the smallest (False) boundary.
+
+    Notes
+    -----
+    The original index is not preserved.
 
     Parameters
     ----------
@@ -228,5 +239,5 @@ def merge_touching(gdf, index, largest=None):
         else:
             neighbors[i] = []
 
-    w = libpysal.weights.W(neighbors, silence_warnings=True)
+    w = libpysal.graph.Graph.from_dicts(neighbors)
     return gdf.drop(delete).dissolve(w.component_labels)
