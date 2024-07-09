@@ -137,6 +137,23 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
     return gdf
 
 
+def _get_parts(geom):
+    """Get parts recursively to explode multi-part geoms in collections
+
+    Parameters
+    ----------
+    geom : shapely.Geometry
+
+    Returns
+    -------
+    np.array[shapely.Geometry]
+    """
+    parts = shapely.get_parts(geom)
+    if (shapely.get_type_id(parts) > 3).any():
+        return _get_parts(parts)
+    return parts
+
+
 def _snap(geometry, reference, threshold, segment_length):
     """Snap g1 to g2 within threshold
 
@@ -175,8 +192,16 @@ def _snap(geometry, reference, threshold, segment_length):
     # update the coordinates with the snapped coordinates
     coords[distance_mask] = shapely.get_coordinates(lines)[1::2][distance_mask]
     # re-create the polygon with new coordinates and original holes and simplify
-    # to remove any extra vertices
-    return shapely.simplify(shapely.Polygon(coords, holes=holes), segment_length / 100)
+    # to remove any extra vertices.
+    polygon = shapely.Polygon(coords, holes=holes)
+    simplified = shapely.make_valid(shapely.simplify(polygon, segment_length / 100))
+    # the function may return invalid and make_valid may return non-polygons
+    # the largest polygon is the most likely the one we want
+    if simplified.geom_type != "Polygon":
+        parts = _get_parts(simplified)
+        simplified = parts[np.argmax(shapely.area(parts))]
+
+    return simplified
 
 
 def snap(geometry, threshold):
@@ -184,6 +209,11 @@ def snap(geometry, threshold):
 
     Only one of the pair of geometries identified as nearby will be snapped,
     the one with the lower index.
+
+    If the snapping heuristics leads to an invalid geometry, the function attempts
+    to fix it using :func:`shapely.make_valid`, which may lead to multi-part geometries.
+    If that happens, only the largest component is returned. Occasionally, this may
+    lead to improper snapping.
 
     Parameters
     ----------
