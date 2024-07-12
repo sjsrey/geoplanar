@@ -72,6 +72,7 @@ class TestOverlap:
 
         gdf1 = merge_overlaps(self.gdf_str, 10, 0)
         assert_equal(gdf1.area.values, numpy.array([104]))
+        assert_equal(gdf1.index.to_list(), ['foo'])
 
     def test_merge_overlaps_multiple(self):
         gdf1 = merge_overlaps(self.gdf2, 10, 0)
@@ -100,6 +101,7 @@ class TestTouching:
 
         gdf1 = merge_touching(self.gdf_str, self.index_str, largest=True)
         assert_equal(gdf1.area.values, numpy.array([101, 100, 3.5]))
+        assert_equal(gdf1.index.to_list(), ['foo', 'baz', 'quux'])
 
     def test_merge_touching_smallest(self):
         gdf2 = merge_touching(self.gdf, self.index, largest=False)
@@ -107,6 +109,7 @@ class TestTouching:
 
         gdf2 = merge_touching(self.gdf_str, self.index_str, largest=False)
         assert_equal(gdf2.area.values, numpy.array([4.5, 100, 100]))
+        assert_equal(gdf2.index.to_list(), ['foo', 'bar', 'baz'])
 
     def test_merge_touching_none(self):
         gdf3 = merge_touching(self.gdf, self.index, largest=None)
@@ -114,3 +117,4 @@ class TestTouching:
 
         gdf3 = merge_touching(self.gdf_str, self.index_str, largest=None)
         assert_equal(gdf3.area.values, numpy.array([4.5, 100, 100]))
+        assert_equal(gdf3.index.to_list(), ['foo', 'bar', 'baz'])
