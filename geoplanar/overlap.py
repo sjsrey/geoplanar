@@ -174,7 +174,10 @@ def merge_overlaps(gdf, merge_limit, overlap_limit):
             neighbors_final[i] = []
 
     w = libpysal.graph.Graph.from_dicts(neighbors_final)
-    return gdf.dissolve(w.component_labels)
+    dissolved_gdf = gdf.dissolve(w.component_labels)
+    dissolved_gdf.index = w.component_labels.drop_duplicates().index
+    dissolved_gdf = dissolved_gdf.rename_axis(index=gdf.index.name)
+    return dissolved_gdf
 
 
 def merge_touching(gdf, index, largest=None):
@@ -240,4 +243,7 @@ def merge_touching(gdf, index, largest=None):
             neighbors[i] = []
 
     w = libpysal.graph.Graph.from_dicts(neighbors)
-    return gdf.drop(delete).dissolve(w.component_labels)
+    dissolved_gdf = gdf.drop(delete).dissolve(w.component_labels)
+    dissolved_gdf.index = w.component_labels.drop_duplicates().index
+    dissolved_gdf = dissolved_gdf.rename_axis(index=gdf.index.name)
+    return dissolved_gdf
