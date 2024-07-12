@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os.path
 
 import geopandas
 import numpy
@@ -8,6 +9,10 @@ from packaging.version import Version
 from shapely.geometry import Polygon, box
 
 from geoplanar import fill_gaps, gaps, snap
+
+HERE = os.path.abspath(os.path.dirname(__file__))
+PACKAGE_DIR = os.path.dirname(os.path.dirname(HERE))
+_TEST_DATA_DIR = os.path.join(PACKAGE_DIR, "geoplanar", "tests", "test_data")
 
 
 class TestGap:
@@ -100,3 +105,10 @@ class TestSnap:
         assert_equal(
             numpy.round(gdf1.area.values, decimals=1), numpy.array([114.1, 102.3, 7.7])
         )
+
+    def test_validity(self):
+        df = geopandas.read_file(
+            os.path.join(_TEST_DATA_DIR, "possibly_invalid_snap.gpkg")
+        )
+        snapped = snap(df, 0.5)
+        assert snapped.is_valid.all()
