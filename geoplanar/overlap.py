@@ -245,5 +245,5 @@ def merge_touching(gdf, index, largest=None):
     w = libpysal.graph.Graph.from_dicts(neighbors)
     dissolved_gdf = gdf.drop(delete).dissolve(w.component_labels)
     dissolved_gdf.index = w.component_labels.drop_duplicates().index
-    dissolved_gdf = dissolved_gdf.rename_axis(index=None)
+    dissolved_gdf = dissolved_gdf.rename_axis(index=gdf.index.name)
     return dissolved_gdf
