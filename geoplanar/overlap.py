@@ -19,11 +19,11 @@ GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 
 def overlaps(gdf):
     if GPD_GE_014:
-        overlaps = gdf.sindex.query(gdf.geometry, predicate="overlaps").T
+        i, j = gdf.sindex.query(gdf.geometry, predicate="overlaps")
     else:
-        overlaps = gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps").T
+        i, j = gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps")
 
-    return overlaps
+    return i, j
 
 
 def trim_overlaps(gdf, largest=True, inplace=False):
