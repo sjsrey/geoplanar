@@ -20,8 +20,9 @@ GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 def overlaps(gdf):
     """Check for overlapping geometries in the GeoDataFrame.
 
-    Parameters:
-    gdf: The input GeoDataFrame.
+    Parameters
+    ----------
+    gdf:  GeoDataFrame with polygon geometries
 
     Returns:
     array-like: Pairs of indices with overlapping geometries.
