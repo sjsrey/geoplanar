@@ -18,12 +18,18 @@ GPD_GE_014 = Version(geopandas.__version__) >= Version("0.14.0")
 
 
 def overlaps(gdf):
-    if GPD_GE_014:
-        i, j = gdf.sindex.query(gdf.geometry, predicate="overlaps").T
-    else:
-        i, j = gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps").T
+    """Check for overlapping geometries in the GeoDataFrame.
 
-    return list(zip(i, j, strict=False))
+    Parameters
+    ----------
+    gdf:  GeoDataFrame with polygon geometries
+
+    Returns:
+    array-like: Pairs of indices with overlapping geometries.
+    """
+    if GPD_GE_014:
+        return gdf.sindex.query(gdf.geometry, predicate="overlaps")
+    return gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps")
 
 
 def trim_overlaps(gdf, largest=True, inplace=False):
