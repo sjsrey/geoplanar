@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import shapely
 from packaging.version import Version
+from collections import defaultdict
+
 
 __all__ = ["gaps", "fill_gaps", "snap"]
 
@@ -57,51 +59,34 @@ def gaps(gdf):
     return polygons.drop(poly_idx).reset_index(drop=True)
 
 
-def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
-    """Fill any gaps in a geodataframe.
+
+def fill_gaps(gdf, gap_df=None, largest=True, compact=False, inplace=False):
+    """Fill any gaps in a GeoDataFrame.
 
     Parameters
     ----------
+    gdf : GeoDataFrame
+        GeoDataFrame with polygon (multipolygon) geometries.
 
-    gdf :  GeoDataFrame with polygon (multipolygon) GeoSeries
+    gap_df : GeoDataFrame, optional
+        GeoDataFrame with gaps to fill. If None, gaps will be determined.
 
+    largest : bool, default True
+        Merge each gap with its largest (True) or smallest (False) neighbor.
+        Ignored if compact=True.
 
-    gap_df:  GeoDataFrame with gaps to fill
-             If None, gaps will be determined
+    compact : bool, default False
+        If True, merge each gap with the neighboring polygon that results in
+        the new polygon with the highest isoperimetric quotient (compactness).
 
-    largest: boolean (Default: True)
-          Merge each gap with its largest (True), or smallest (False) neighbor.
-          If None, merge with any neighbor non-deterministically but performantly.
-
-    inplace: boolean (default: False)
-          Change the geoseries of current dataframe
-
+    inplace : bool, default False
+        If True, modify the input GeoDataFrame in place.
 
     Returns
     -------
-
-    _gaps : GeoDataFrame with gap polygons
-
-    Examples
-    --------
-    >>> p1 = box(0,0,10,10)
-    >>> p2 = Polygon([(10,10), (12,8), (10,6), (12,4), (10,2), (20,5)])
-    >>> gdf = geopandas.GeoDataFrame(geometry=[p1,p2])
-    >>> gdf.area
-    0    100.0
-    1     32.0
-    dtype: float64
-    >>> h = geoplanar.gaps(gdf)
-    >>> h.area
-    array([4., 4.])
-    >>> gdf1 = geoplanar.fill_gaps(gdf)
-    >>> gdf1.area
-    0    108.0
-    1     32.0
-    dtype: float64
+    GeoDataFrame
+        GeoDataFrame with gaps filled.
     """
-    from collections import defaultdict
-
     if gap_df is None:
         gap_df = gaps(gdf)
 
@@ -116,13 +101,41 @@ def fill_gaps(gdf, gap_df=None, largest=True, inplace=False):
         gap_idx, gdf_idx = gdf.sindex.query(gap_df.geometry, predicate="intersects")
 
     to_merge = defaultdict(set)
+
+    def isoperimetric_quotient(polygon):
+        """Calculate the isoperimetric quotient for a polygon."""
+        if not polygon.is_valid or polygon.is_empty:
+            return 0  # Invalid or empty polygons have an IQ of 0
+        area = polygon.area
+        perimeter = polygon.length
+        if perimeter == 0:
+            return 0  # Avoid division by zero
+        return (4 * np.pi * area) / (perimeter ** 2)
+
     for g_ix in range(len(gap_df)):
         neighbors = gdf_idx[gap_idx == g_ix]
-        if largest is None:  # don't care which polygon is a gap attached to
+        gap_geom = gap_df.geometry.iloc[g_ix]
+
+        if compact:
+            # Find the neighbor that results in the highest IQ
+            best_iq = -1
+            best_neighbor = None
+            for neighbor in neighbors:
+                combined_geom = shapely.union_all(
+                    [gdf.geometry.iloc[neighbor], gap_geom]
+                )
+                iq = isoperimetric_quotient(combined_geom)
+                if iq > best_iq:
+                    best_iq = iq
+                    best_neighbor = neighbor
+            to_merge[best_neighbor].add(g_ix)
+        elif largest is None:  # don't care which polygon we attach cap to
             to_merge[gdf.index[neighbors[0]]].add(g_ix)
         elif largest:
+            # Attach to the largest neighbor
             to_merge[gdf.iloc[neighbors].area.idxmax()].add(g_ix)
         else:
+            # Attach to the smallest neighbor
             to_merge[gdf.iloc[neighbors].area.idxmin()].add(g_ix)
 
     new_geom = []
