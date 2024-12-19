@@ -6,6 +6,7 @@ import pandas as pd
 import shapely
 from packaging.version import Version
 from collections import defaultdict
+from esda.shape import isoperimetric_quotient
 
 
 __all__ = ["gaps", "fill_gaps", "snap"]
@@ -105,16 +106,6 @@ def fill_gaps(gdf, gap_df=None, strategy='largest', inplace=False):
         gap_idx, gdf_idx = gdf.sindex.query(gap_df.geometry, predicate="intersects")
 
     to_merge = defaultdict(set)
-
-    def isoperimetric_quotient(polygon):
-        """Calculate the isoperimetric quotient for a polygon."""
-        if not polygon.is_valid or polygon.is_empty:
-            return 0  # Invalid or empty polygons have an IQ of 0
-        area = polygon.area
-        perimeter = polygon.length
-        if perimeter == 0:
-            return 0  # Avoid division by zero
-        return (4 * np.pi * area) / (perimeter ** 2)
 
     for g_ix in range(len(gap_df)):
         neighbors = gdf_idx[gap_idx == g_ix]
