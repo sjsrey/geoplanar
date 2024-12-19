@@ -112,12 +112,13 @@ def fill_gaps(gdf, gap_df=None, strategy='largest', inplace=False):
 
         if strategy == 'compact':
             # Find the neighbor that results in the highest IQ
-            gap_geom = gap_df.geometry.iloc[g_ix]
+            gap_geom = shapely.make_valid(gap_df.geometry.iloc[g_ix])
             best_iq = -1
             best_neighbor = None
-            for neighbor in neighbors:
+            neighbor_geometries = gdf.geometry.iloc[neighbors].apply(shapely.make_valid)
+            for neighbor, neighbor_geom in zip(neighbors, neighbor_geometries):
                 combined_geom = shapely.union_all(
-                    [gdf.geometry.iloc[neighbor], gap_geom]
+                    [neighbor_geom, gap_geom]
                 )
                 iq = isoperimetric_quotient(combined_geom)
                 if iq > best_iq:
