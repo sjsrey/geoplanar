@@ -59,33 +59,37 @@ def gaps(gdf):
     return polygons.drop(poly_idx).reset_index(drop=True)
 
 
-
-def fill_gaps(gdf, gap_df=None, largest=True, compact=False, inplace=False):
-    """Fill any gaps in a GeoDataFrame.
+def fill_gaps(gdf, gap_df=None, strategy='largest', inplace=False):
+    """Fill gaps in a GeoDataFrame by merging them with neighboring polygons.
 
     Parameters
     ----------
     gdf : GeoDataFrame
-        GeoDataFrame with polygon (multipolygon) geometries.
+        A GeoDataFrame containing polygon or multipolygon geometries.
 
     gap_df : GeoDataFrame, optional
-        GeoDataFrame with gaps to fill. If None, gaps will be determined.
+        A GeoDataFrame containing the gaps to be filled. If None, gaps will be 
+        automatically detected within `gdf`.
 
-    largest : bool, default True
-        Merge each gap with its largest (True) or smallest (False) neighbor.
-        Ignored if compact=True.
-
-    compact : bool, default False
-        If True, merge each gap with the neighboring polygon that results in
-        the new polygon with the highest isoperimetric quotient (compactness).
+    strategy : {'smallest', 'largest', 'compact', None}, default 'largest'
+        Strategy to determine how gaps are merged with neighboring polygons:
+          - 'smallest': Merge each gap with the smallest neighboring polygon.
+          - 'largest' : Merge each gap with the largest neighboring polygon.
+          - 'compact' : Merge each gap with the neighboring polygon that results in
+                        the new polygon having the highest compactness 
+                        (isoperimetric quotient).
+          - None      : Merge each gap with the first available neighboring polygon
+                        (order is indeterminate).
 
     inplace : bool, default False
-        If True, modify the input GeoDataFrame in place.
+        If True, modify the input GeoDataFrame in place. Otherwise, return a new 
+        GeoDataFrame with the gaps filled.
 
     Returns
     -------
-    GeoDataFrame
-        GeoDataFrame with gaps filled.
+    GeoDataFrame or None
+        A new GeoDataFrame with gaps filled if `inplace` is False. Otherwise, 
+        modifies `gdf` in place and returns None.
     """
     if gap_df is None:
         gap_df = gaps(gdf)
@@ -114,10 +118,10 @@ def fill_gaps(gdf, gap_df=None, largest=True, compact=False, inplace=False):
 
     for g_ix in range(len(gap_df)):
         neighbors = gdf_idx[gap_idx == g_ix]
-        gap_geom = gap_df.geometry.iloc[g_ix]
 
-        if compact:
+        if strategy == 'compact':
             # Find the neighbor that results in the highest IQ
+            gap_geom = gap_df.geometry.iloc[g_ix]
             best_iq = -1
             best_neighbor = None
             for neighbor in neighbors:
@@ -129,9 +133,9 @@ def fill_gaps(gdf, gap_df=None, largest=True, compact=False, inplace=False):
                     best_iq = iq
                     best_neighbor = neighbor
             to_merge[best_neighbor].add(g_ix)
-        elif largest is None:  # don't care which polygon we attach cap to
+        elif strategy is None:  # don't care which polygon we attach cap to
             to_merge[gdf.index[neighbors[0]]].add(g_ix)
-        elif largest:
+        elif strategy == 'largest':
             # Attach to the largest neighbor
             to_merge[gdf.iloc[neighbors].area.idxmax()].add(g_ix)
         else:

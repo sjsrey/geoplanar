@@ -14,12 +14,12 @@ def test_fill_gaps_compact_visual_case():
     # Create GeoDataFrame
     gdf = gpd.GeoDataFrame(geometry=[p1, p2, p3, p4])
 
-    # Fill gaps with compact=True
-    filled_gdf_compact = fill_gaps(gdf, compact=True)
+    # Fill gaps with compact
+    filled_gdf_compact = fill_gaps(gdf, strategy='compact')
     compact_geom_count = len(filled_gdf_compact)
 
-    # Fill gaps with default behavior (largest=True)
-    filled_gdf_default = fill_gaps(gdf, compact=False, largest=True)
+    # Fill gaps with largest (default)
+    filled_gdf_default = fill_gaps(gdf, strategy='largest')
     default_geom_count = len(filled_gdf_default)
 
     # Assert the number of geometries is the same after filling gaps
