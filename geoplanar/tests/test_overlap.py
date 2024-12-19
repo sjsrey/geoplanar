@@ -34,28 +34,28 @@ class TestOverlap:
         assert_equal(gdf1.area.values, numpy.array([96.0, 8.0]))
 
     def test_trim_overlaps_smallest(self):
-        gdf1 = trim_overlaps(self.gdf, largest=False)
-        assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
-
-        gdf1 = trim_overlaps(self.gdf_str, largest=False)
+        gdf1 = trim_overlaps(self.gdf, strategy='smallest')
         assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
 
     def test_trim_overlaps_random(self):
-        gdf1 = trim_overlaps(self.gdf, largest=None)
-        assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
-
-        gdf1 = trim_overlaps(self.gdf_str, largest=None)
+        gdf1 = trim_overlaps(self.gdf, strategy=None)
         assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
 
     def test_trim_overlaps_multiple(self):
-        gdf1 = trim_overlaps(self.gdf2, largest=False)
-        assert_equal(gdf1.area.values, numpy.array([100.0, 100.0, 0.0]))
+        gdf1 = trim_overlaps(self.gdf2, strategy='largest')
+        assert_equal(gdf1.area.values, numpy.array([96, 96.0, 8.0]))
 
-        gdf1 = trim_overlaps(self.gdf2, largest=None)
+        gdf1 = trim_overlaps(self.gdf2, strategy=None)
         assert_equal(gdf1.area.values, numpy.array([100.0, 100.0, 0.0]))
 
         gdf1 = trim_overlaps(self.gdf2)
         assert_equal(gdf1.area.values, numpy.array([96.0, 96.0, 8.0]))
+
+        gdf1 = trim_overlaps(self.gdf2, strategy='smallest')
+        assert_equal(gdf1.area.values, numpy.array([100.0, 100.0, 0.0]))
+
+        gdf = trim_overlaps(self.gdf2, strategy='compact')
+        assert_equal(gdf1.area.values, numpy.array([100.0, 100.0, 0.0]))
 
     def test_merge_overlaps(self):
         gdf1 = merge_overlaps(self.gdf, 10, 0)
