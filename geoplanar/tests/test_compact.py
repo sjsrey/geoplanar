@@ -2,7 +2,10 @@ import pytest
 from shapely.geometry import box
 import geopandas as gpd
 from geoplanar import fill_gaps  # Updated module name
+from packaging.version import Version
+import pytest
 
+@pytest.mark.skipif(Version(gpd.__version__) == Version("0.10.2"), reason="Missing pygeos")    
 def test_fill_gaps_compact_visual_case():
     """Test fill_gaps behavior with compact=True and compact=False using specific geometries."""
     # Define four polygons with a visible gap

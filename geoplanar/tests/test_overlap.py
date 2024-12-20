@@ -4,6 +4,8 @@ import geopandas
 import numpy
 from numpy.testing import assert_equal
 from shapely.geometry import box
+from packaging.version import Version
+import pytest
 
 from geoplanar.overlap import (
     is_overlapping,
@@ -41,6 +43,7 @@ class TestOverlap:
         gdf1 = trim_overlaps(self.gdf, strategy=None)
         assert_equal(gdf1.area.values, numpy.array([100.0, 4.0]))
 
+    @pytest.mark.skipif(Version(geopandas.__version__) == Version("0.10.2"), reason="Missing pygeos")    
     def test_trim_overlaps_multiple(self):
         gdf1 = trim_overlaps(self.gdf2, strategy='largest')
         assert_equal(gdf1.area.values, numpy.array([96, 96.0, 8.0]))
