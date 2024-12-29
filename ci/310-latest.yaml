@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python=3.10
   - libpysal
+  - esda
   - geopandas
   - packaging
   - pytest

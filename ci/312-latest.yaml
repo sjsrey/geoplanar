@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python=3.12
   - libpysal
+  - esda
   - packaging
   - pytest
   - pytest-cov

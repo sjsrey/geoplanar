@@ -5,6 +5,7 @@ import geopandas
 import libpysal
 import numpy as np
 from packaging.version import Version
+from esda.shape import isoperimetric_quotient
 
 __all__ = [
     "overlaps",
@@ -32,7 +33,7 @@ def overlaps(gdf):
     return gdf.sindex.query_bulk(gdf.geometry, predicate="overlaps")
 
 
-def trim_overlaps(gdf, largest=True, inplace=False):
+def trim_overlaps(gdf, strategy='largest', inplace=False):
     """Trim overlapping polygons
 
     Note
@@ -46,11 +47,14 @@ def trim_overlaps(gdf, largest=True, inplace=False):
 
     gdf:  geodataframe with polygon geometries
 
-    largest: boolean (Default: True)
-            True: trim the larger of the pair of overlapping polygons,
-            False: trim the smaller polygon.
-            If None, trim either polygon non-deterministically but performantly.
-
+    strategy : {'smallest', 'largest', 'compact', None}, default 'largest'
+        Strategy to determine which polygon to trim.
+          - 'smallest': Trim the smallest polygon.
+          - 'largest' : Trim the largest polygon.
+          - 'compact' : Trim the polygon yielding the most compact modified polygon.
+                            (isoperimetric quotient).
+          - None      : Trim either polygon non-deterministically but performantly.
+    
     Returns
     -------
 
@@ -67,35 +71,43 @@ def trim_overlaps(gdf, largest=True, inplace=False):
 
     geom_col_idx = gdf.columns.get_loc(gdf.geometry.name)
 
-    if largest is None:  # don't care which polygon to trim
+    if strategy is None:  # don't care which polygon to trim
         for i, j in intersections:
             if i != j:
                 left = gdf.geometry.iloc[i]
                 right = gdf.geometry.iloc[j]
-                right = gdf.geometry.iloc[j].difference(gdf.geometry.iloc[i])
-                gdf.iloc[j, geom_col_idx] = right
-    elif largest:
+                gdf.iloc[j, geom_col_idx] = right.difference(left)
+    elif strategy=='largest':
         for i, j in intersections:
             if i != j:
                 left = gdf.geometry.iloc[i]
                 right = gdf.geometry.iloc[j]
-                if left.area < right.area:
-                    right = gdf.geometry.iloc[j].difference(gdf.geometry.iloc[i])
-                    gdf.iloc[j, geom_col_idx] = right
+                if left.area > right.area:  # trim left
+                    gdf.iloc[i, geom_col_idx] = left.difference(right)
                 else:
-                    left = gdf.geometry.iloc[i].difference(gdf.geometry.iloc[j])
-                    gdf.iloc[i, geom_col_idx] = left
-    else:
+                    gdf.iloc[j, geom_col_idx] = right.difference(left)
+    elif strategy=='smallest':
         for i, j in intersections:
             if i != j:
                 left = gdf.geometry.iloc[i]
                 right = gdf.geometry.iloc[j]
-                if left.area > right.area:
-                    right = gdf.geometry.iloc[j].difference(gdf.geometry.iloc[i])
-                    gdf.iloc[j, geom_col_idx] = right
+                if left.area < right.area:  # trim left
+                    gdf.iloc[i, geom_col_idx] = left.difference(right)
                 else:
-                    left = gdf.geometry.iloc[i].difference(gdf.geometry.iloc[j])
-                    gdf.iloc[i, geom_col_idx] = left
+                    gdf.iloc[j, geom_col_idx] = right.difference(left)
+    elif strategy=='compact':
+         for i, j in intersections:
+             if i != j:
+                 left = gdf.geometry.iloc[i]
+                 right = gdf.geometry.iloc[j]
+                 left_c = left.difference(right)
+                 right_c = right.difference(left)
+                 iq_left = isoperimetric_quotient(left_c)
+                 iq_right = isoperimetric_quotient(right_c)
+                 if iq_left > iq_right:  # trimming left is more compact than right
+                     gdf.iloc[i, geom_col_idx] = left_c
+                 else:
+                     gdf.iloc[j, geom_col_idx] = right_c
     return gdf
 
 

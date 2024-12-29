@@ -36,17 +36,11 @@ class TestGap:
         assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
 
     def test_fill_gaps_smallest(self):
-        gdf1 = fill_gaps(self.gdf, largest=False)
-        assert_equal(gdf1.area.values, numpy.array([100.0, 40.0]))
-
-        gdf1 = fill_gaps(self.gdf_str, largest=False)
+        gdf1 = fill_gaps(self.gdf, strategy='smallest')
         assert_equal(gdf1.area.values, numpy.array([100.0, 40.0]))
 
     def test_fill_gaps_none(self):
-        gdf1 = fill_gaps(self.gdf, largest=None)
-        assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
-
-        gdf1 = fill_gaps(self.gdf_str, largest=None)
+        gdf1 = fill_gaps(self.gdf, strategy=None)
         assert_equal(gdf1.area.values, numpy.array([108.0, 32.0]))
 
     def test_fill_gaps_gaps_df(self):
